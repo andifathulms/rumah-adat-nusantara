@@ -380,14 +380,24 @@ export function Viewport({
         still model says it can be turned. Saying so is the only affordance
         left, and it goes away as soon as it has been used.
       */}
+      {/*
+        A chip on the model, like every other caption over it: one line, never
+        wrapping into the scale bar. A phone gets the touch-length line, a
+        wider screen the full one with its keys; the full line is always what
+        a screen reader is given, because the canvas is described by it.
+      */}
+      <p id={hintId} className="sr-only">
+        {pick(COPY.hint, locale)}
+      </p>
       <p
-        id={hintId}
+        aria-hidden
         className={[
-          'micro pointer-events-none absolute bottom-masthead-clear right-3 select-none text-right transition-opacity duration-layout sheet:bottom-3',
+          'pointer-events-none absolute bottom-masthead-clear right-3 select-none whitespace-nowrap rounded bg-chip-model px-2 py-1 text-right text-meta text-on-model transition-opacity duration-layout sheet:bottom-3 sheet:max-w-hint sheet:whitespace-normal',
           touched ? 'opacity-0' : 'opacity-100',
         ].join(' ')}
       >
-        {pick(COPY.hint, locale)}
+        <span className="sheet:hidden">{pick(COPY.hintShort, locale)}</span>
+        <span className="hidden sheet:inline">{pick(COPY.hint, locale)}</span>
       </p>
     </div>
   )

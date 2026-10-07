@@ -77,6 +77,8 @@ const config: Config = {
         masthead: 'var(--masthead-h)',
       },
       minWidth: {
+        // The minimum pointer target, as a width, for square controls.
+        control: 'var(--control-target)',
         // The same-scale elevation shelf pans below this rather than shrinking.
         shelf: 'var(--shelf-min)',
         // The source table pans below this rather than reflowing.
@@ -85,6 +87,12 @@ const config: Config = {
       maxWidth: {
         readout: 'var(--readout-max)',
         caption: 'var(--caption-max)',
+        hint: 'var(--hint-max)',
+      },
+      gridTemplateColumns: {
+        // A stepper's options: equal columns, wrapping before they narrow
+        // past the pointer target.
+        steps: 'repeat(auto-fit, minmax(var(--control-step), 1fr))',
       },
       boxShadow: {
         // The one shadow: a surface a reader can pick up.

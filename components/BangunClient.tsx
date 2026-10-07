@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Sheet } from './Sheet'
 import { Viewport, usePrefersReducedMotion } from './viewport/Viewport'
 import type { ViewKey } from './viewport/scene'
@@ -185,7 +185,6 @@ function BangunInner({ locale, t }: { locale: Locale; t: Tradition }) {
             Everything below is a control or a note, and the export is last
             because taking the drawing away is the last thing anyone does.
           */}
-          <PlaceNote locale={locale} tradition={t} />
           <RuleControlsFor
             tradition={t.key}
             query={built.query}
@@ -222,6 +221,7 @@ function BangunInner({ locale, t }: { locale: Locale; t: Tradition }) {
             house has one written: see the note on `Derivation`.
           */}
           <Derivation tradition={t.key} query={built.query} locale={locale} />
+          <PlaceNote locale={locale} tradition={t} />
           <RailSection title={pick(COPY.provenance.heading, locale)}>
             <ProvenanceStrip
               split={built.split}
@@ -374,37 +374,60 @@ function useRuleAddress(fallback: string): [string, (next: string) => void, bool
  * and a tongkonan has no anjuang — so the rows arrive already chosen.
  */
 function Readout({ locale, built }: { locale: Locale; built: Built }) {
+  /*
+   * Folded on a phone, open beside a rail. On a 390px screen the panel
+   * covered half the house it was describing; the figures are one tap away
+   * and the headline — which house these rules made — stays in view either
+   * way. Decided after mount, so the exported HTML is the open panel and
+   * nothing hydrates differently from what was sent.
+   */
+  const [open, setOpen] = useState(true)
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 859px)').matches) setOpen(false)
+  }, [])
+  const id = useId()
   return (
-    /*
-      Announced when it changes, because it is the answer to every rule the
-      reader sets. A sighted reader watches the house rebuild and the figures
-      follow; without this a screen reader user presses a control and is told
-      nothing at all.
-
-      polite and not atomic on purpose: only the figures that moved are read,
-      rather than every row each time a slider steps.
-    */
-    <div
-      aria-live="polite"
-      className="pointer-events-none absolute left-3 top-14 z-10 max-w-readout rounded border border-hairline bg-veil px-3 py-2.5 backdrop-blur-veil sheet:top-3"
-    >
+    <div className="absolute left-3 top-14 z-10 max-w-readout rounded border border-hairline bg-veil px-3 py-2.5 backdrop-blur-veil sheet:top-3">
       {/*
         Without this line the figures read as the specifications of a real
         building. They are outputs of the rules in the rail, and saying so is
         what connects the controls to the model.
       */}
-      <p className="micro">{pick(COPY.computed, locale)}</p>
-      <p className="mt-1 text-body font-medium leading-tight">{built.headline[locale]}</p>
-      <p className="mt-0.5 text-meta text-muted">{built.subhead[locale]}</p>
-      <hr className="rule my-2" />
-      <dl className="flex flex-col gap-0.5">
-        {built.readout.map((row) => (
-          <div key={row.label.en} className="flex items-baseline justify-between gap-3">
-            <dt className="text-meta text-muted">{row.label[locale]}</dt>
-            <dd className="num text-meta">{row.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="micro">{pick(COPY.computed, locale)}</p>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={id}
+          aria-label={pick(open ? COPY.readoutHide : COPY.readoutShow, locale)}
+          onClick={() => setOpen((o) => !o)}
+          className="press -my-1 -mr-1 inline-flex min-h-control min-w-control items-center justify-center rounded font-mono text-meta text-bolu hover:bg-wash"
+        >
+          <span aria-hidden>{open ? '−' : '+'}</span>
+        </button>
+      </div>
+      <p className="mt-1 font-display text-lead leading-tight">{built.headline[locale]}</p>
+      {/*
+        Announced when it changes, because it is the answer to every rule the
+        reader sets. A sighted reader watches the house rebuild and the figures
+        follow; without this a screen reader user presses a control and is told
+        nothing at all. polite and not atomic on purpose: only the figures that
+        moved are read, rather than every row each time a slider steps. Folded
+        is sr-only rather than hidden, so folding the panel on a phone never
+        silences it.
+      */}
+      <div id={id} aria-live="polite" className={open ? undefined : 'sr-only'}>
+        <p className="mt-0.5 text-meta text-muted">{built.subhead[locale]}</p>
+        <hr className="rule my-2" />
+        <dl className="flex flex-col gap-0.5">
+          {built.readout.map((row) => (
+            <div key={row.label.en} className="flex items-baseline justify-between gap-3">
+              <dt className="text-meta text-muted">{row.label[locale]}</dt>
+              <dd className="num text-meta">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </div>
   )
 }

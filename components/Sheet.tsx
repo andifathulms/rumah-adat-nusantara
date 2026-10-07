@@ -184,67 +184,60 @@ function TitleBlock({
         Under 860px the masthead over the model carries the wordmark, the claim
         and the language switch, and this block used to carry them again — two
         wordmarks, two full language controls and four extra tab stops in the
-        same document. So above 860px, where there is no masthead, this is the
-        title block; below it, this is the navigation and the masthead is the
-        title block.
+        same document. So above 860px, where there is no masthead, this row is
+        the identity; below it, the masthead is.
+
+        The claim itself left the rail in the second design pass. It was the
+        largest thing here, on the reasoning that a stranger needs the claim
+        before the name — which is true of the landing and of a front door,
+        both of which lead with it. A reader on a working route has already
+        walked through one of them, and what they need first here is which
+        house this is and the rules they came to change.
       */}
-      <div className="hidden sheet:block">
-        <div className="flex items-baseline justify-between gap-3">
-          {/* The wordmark is the way back up: the collection is the landing page. */}
-          <Link
-            href={`${homeHref(locale)}/`}
-            className="flex items-center gap-2 micro text-bolu"
-          >
-            <Mark />
-            {pick(COPY.appName, locale)}
-          </Link>
-          <LocaleSwitch locale={locale} targets={localeTargets(route, tradition)} />
-        </div>
-        {/*
-          The tagline is the largest thing in the rail and the wordmark is the
-          smallest. That inversion is deliberate: a stranger needs the claim
-          before the name, and the name means nothing until they have it.
-        */}
-        <p className="mt-2 text-lead text-bolu">{pick(COPY.tagline, locale)}</p>
+      <div className="hidden items-center justify-between gap-3 sheet:flex">
+        {/* The wordmark is the way back up: the collection is the landing page. */}
+        <Link href={`${homeHref(locale)}/`} className="flex items-center gap-2 micro text-bolu">
+          <Mark />
+          {pick(COPY.appName, locale)}
+        </Link>
+        <LocaleSwitch locale={locale} targets={localeTargets(route, tradition)} />
       </div>
 
       <HouseCrumb locale={locale} tradition={tradition} />
 
-      {/* The thesis is wanted on both, and the masthead has no room for it. */}
-      <p className="mt-2 text-body text-muted sheet:mt-2">{pick(COPY.thesis, locale)}</p>
-
-      <hr className="rule my-4" />
-
-      <nav>
-        <ul className="flex flex-col gap-px">
+      {/*
+        The four routes as one control, because they are four readings of one
+        house rather than four places: a tab bar says that, and it costs a
+        line where the list cost a quarter of the rail. The gloss under it
+        names what the active reading is for, which is all the list's second
+        lines ever said for the route you were not on.
+      */}
+      <nav className="mt-4">
+        <ul className="grid grid-cols-4 gap-1 rounded border border-hairline bg-film p-1">
           {ROUTES.map((r) => {
             const active = r === route
             return (
-              <li key={r}>
+              <li key={r} className="min-w-0">
                 <Link
                   href={href(locale, tradition.slug, r)}
                   aria-current={active ? 'page' : undefined}
+                  title={pick(COPY.navGloss[r], locale)}
                   className={[
-                    'press block rounded px-2 py-1.5 transition-colors duration-state',
+                    'press micro flex min-h-control items-center justify-center rounded px-1 py-1.5 text-center transition-colors duration-state',
                     active ? 'bg-bolu text-kapur' : 'text-bolu hover:bg-wash',
                   ].join(' ')}
                 >
-                  <span className="block text-body leading-tight">
-                    {pick(COPY.nav[r], locale)}
-                  </span>
-                  <span
-                    className={[
-                      'mt-0.5 block text-meta',
-                      active ? 'text-muted-on-ink' : 'text-muted',
-                    ].join(' ')}
-                  >
-                    {pick(COPY.navGloss[r], locale)}
-                  </span>
+                  {pick(COPY.nav[r], locale)}
                 </Link>
               </li>
             )
           })}
         </ul>
+        <p className="mt-2 text-meta text-muted">{pick(COPY.navGloss[route], locale)}</p>
+        {/* The thesis is an instruction, and only one route can follow it. */}
+        {route === 'bangun' ? (
+          <p className="mt-3 text-body text-bolu">{pick(COPY.thesis, locale)}</p>
+        ) : null}
         {/*
           The fifth door, quieter than the four: it leads out of this house
           into the comparison, pre-filled with this building on the left, so
@@ -252,7 +245,7 @@ function TitleBlock({
         */}
         <Link
           href={`/${locale}/banding/?a=${tradition.slug}`}
-          className="press mt-1 block rounded px-2 py-1.5 text-meta text-muted transition-colors duration-state hover:bg-wash hover:text-bolu"
+          className="press mt-3 inline-block rounded text-meta text-muted underline-offset-4 transition-colors duration-state hover:text-bolu hover:underline"
         >
           {pick(COPY.banding.from, locale)} <span aria-hidden>→</span>
         </Link>
@@ -270,23 +263,32 @@ function TitleBlock({
  * index rather than sideways: the switch is a cut, and the address's query
  * half — this house's rules — does not survive it, because `?pangkat=layuk`
  * means nothing to a rumah gadang.
+ *
+ * Set as a breadcrumb over a name: the collection, then this house in the
+ * display voice, because on a working route the house is the title.
  */
 function HouseCrumb({ locale, tradition }: { locale: Locale; tradition: Tradition }) {
   return (
-    <div className="mt-4 flex items-baseline justify-between gap-3">
+    <div className="mt-4 sheet:mt-5">
+      <p className="micro">
+        <Link
+          href={`${homeHref(locale)}/`}
+          className="text-muted underline-offset-4 transition-colors duration-state hover:text-bolu hover:underline"
+        >
+          {pick(COPY.tradition.all, locale)}
+        </Link>
+        <span aria-hidden> / </span>
+        <span className="text-bolu">{tradition.people[locale]}</span>
+      </p>
       <Link
         href={`${houseHref(locale, tradition.slug)}/`}
-        className="min-w-0 rounded transition-colors duration-state hover:bg-wash"
+        className="mt-1 block rounded underline-offset-4 hover:underline"
       >
-        <span className="block text-body leading-tight text-bolu">{tradition.house[locale]}</span>
-        <span className="mt-0.5 block text-meta text-muted">{tradition.place[locale]}</span>
+        <span className="block font-display text-title leading-tight text-bolu">
+          {tradition.house[locale]}
+        </span>
       </Link>
-      <Link
-        href={`${homeHref(locale)}/`}
-        className="micro shrink-0 text-bolu underline underline-offset-4"
-      >
-        {pick(COPY.tradition.all, locale)} <span aria-hidden>→</span>
-      </Link>
+      <span className="mt-0.5 block text-meta text-muted">{tradition.place[locale]}</span>
     </div>
   )
 }

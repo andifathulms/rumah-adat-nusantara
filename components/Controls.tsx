@@ -44,12 +44,34 @@ export function OrientationNote({
  * frame for everything below it and a reader should not have to go looking for
  * the answer to "whose house is this".
  */
+/**
+ * Whose house this is, folded under the rules.
+ *
+ * It used to open the rail, a long paragraph between the reader and the
+ * controls they came to use. A reader on this route has already passed the
+ * front door, which leads with the same paragraph and the same caution, and
+ * the intro that shows while the model loads states the caution again. So it
+ * is one tap away rather than gone, and its summary still names it.
+ */
 export function PlaceNote({ locale, tradition }: { locale: Locale; tradition: Tradition }) {
   return (
-    <RailSection title={pick(COPY.place.heading, locale)}>
-      <p className="text-body">{tradition.about[locale]}</p>
-      <p className="mt-3 text-body text-muted">{tradition.caution[locale]}</p>
-    </RailSection>
+    <section className="border-t border-hairline">
+      <details className="group">
+        <summary className="micro flex min-h-control cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition-colors duration-state hover:bg-wash hover:text-bolu">
+          <span>{pick(COPY.place.heading, locale)}</span>
+          <span aria-hidden className="font-mono text-meta group-open:hidden">
+            +
+          </span>
+          <span aria-hidden className="hidden font-mono text-meta group-open:inline">
+            −
+          </span>
+        </summary>
+        <div className="px-4 pb-4">
+          <p className="text-body">{tradition.about[locale]}</p>
+          <p className="mt-3 text-body text-muted">{tradition.caution[locale]}</p>
+        </div>
+      </details>
+    </section>
   )
 }
 
@@ -417,8 +439,13 @@ export function Stepper({
   )
   return (
     // No fieldset here: the Field around this one is the group, and its
-    // visible label is the legend.
-    <div className="flex gap-px">
+    // visible label is the legend. A grid of equal columns rather than flex:
+    // each option is a <label> around a radio, and `flex-1` on the face inside
+    // it never reached the label, so the numbers packed into a 24px clump at
+    // the left of the rail with their borders touching. Columns wrap rather
+    // than narrow, so a long range — a census of households — takes a second
+    // row instead of shrinking under the pointer-target floor.
+    <div className="grid grid-cols-steps gap-1">
       {options.map((n) => (
         <Choice
           key={n}
@@ -427,7 +454,7 @@ export function Stepper({
           checked={n === value}
           onSelect={() => onChange(n)}
           face={[
-            'num block flex-1 rounded py-1.5 text-center text-body transition-colors duration-state',
+            'num flex min-h-control items-center justify-center rounded py-1.5 text-body transition-colors duration-state',
             n === value ? 'bg-bolu text-kapur' : 'border border-hairline hover:bg-wash',
           ].join(' ')}
         >

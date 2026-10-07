@@ -100,7 +100,7 @@ export function IndexFilter({
         type="button"
         aria-pressed={on}
         onClick={() => setIsland(id)}
-        className={`press min-h-control rounded-full border px-3 font-mono text-meta transition-colors duration-state ${
+        className={`press min-h-control rounded border px-3 font-mono text-meta transition-colors duration-state ${
           on
             ? 'border-bolu bg-bolu text-kapur'
             : 'border-hairline text-bolu hover:border-muted hover:bg-wash'

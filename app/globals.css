@@ -146,6 +146,8 @@
    * the app already clears this.
    */
   --control-target: 24px;
+  /* The narrowest a stepper's option may be before the row wraps. */
+  --control-step: 36px;
 
   --sp-1: 4px;
   --sp-2: 8px;
@@ -192,6 +194,7 @@
   --table-min: 38rem; /* the source table pans below this, never reflows */
   --readout-max: 240px; /* the computed-figures panel over the viewport */
   --caption-max: 30rem; /* the stage caption over the viewport */
+  --hint-max: 26rem; /* the drag hint over the viewport: wraps before it reaches the scale bar */
 
   --t-state: 150ms;
   --t-layout: 400ms;
@@ -276,6 +279,14 @@ h3 {
 p,
 figcaption {
   text-wrap: pretty;
+}
+
+/*
+ * A disclosure draws its own + and −; Safari's triangle would be a second
+ * marker saying the same thing in a different hand.
+ */
+summary::-webkit-details-marker {
+  display: none;
 }
 
 body {

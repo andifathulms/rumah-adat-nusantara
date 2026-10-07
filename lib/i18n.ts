@@ -86,6 +86,16 @@ export const COPY = {
     'Seret atau tombol panah untuk memutar · gulir atau +/− untuk mendekat · Home memulihkan pandangan',
     'Drag or arrow keys to rotate · scroll or +/− to zoom · Home resets the view',
   ),
+  /*
+   * The same affordance at phone length. A touch screen has no arrow keys
+   * and no Home key, and the long line wrapped onto three lines over the
+   * scale bar and the house. Pinching needs no telling; turning does,
+   * because a model that never idles gives no sign it can be turned.
+   */
+  hintShort: t('Seret untuk memutar', 'Drag to turn'),
+  /* The readout's fold, so a phone reader can give the house its screen back. */
+  readoutShow: t('Tampilkan ukuran', 'Show figures'),
+  readoutHide: t('Sembunyikan ukuran', 'Hide figures'),
   computed: t('Dihitung dari aturan', 'Computed from the rules'),
   /* Over the elevation while a route's one facade loads: the generator is
      arriving, not the picture — the picture is already there. */
