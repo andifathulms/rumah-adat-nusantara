@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { RailSection, Sheet } from '@/components/Sheet'
 import { ProvenanceStrip, ProvenanceTag } from '@/components/Provenance'
+import { ClassFilter } from '@/components/ClassFilter'
 import { COPY, DEFAULT_LOCALE, isLocale, pick, routeMetadata } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
 import { isTraditionKey, tradition } from '@/lib/tradition/registry'
@@ -44,6 +45,15 @@ export default function Sumber({ params }: { params: { locale: string; tradisi: 
   // static HTML by the time anyone reads it, so the cost is paid by the build
   // and never by a reader.
   const sensitivity = t0.sensitivity()
+  /*
+   * The largest shift any one dimension causes when it is out by the probe's
+   * share. Each row's bar is a fraction of this, so the bars compare the
+   * dimensions of this house with each other — never with another house's.
+   */
+  const worstShift = Math.max(
+    0,
+    ...t0.dims.map(({ key }) => sensitivityOf(sensitivity, key)?.worst ?? 0),
+  )
   const pct = Math.round(PERTURBATION * 100)
   // Also build time. The broken house exists for the length of one check and
   // is never rendered — this page is the only route that ever sees it, and it
@@ -98,7 +108,7 @@ export default function Sumber({ params }: { params: { locale: string; tradisi: 
             is the same words drawn — a second h1 saying "Sources" underneath
             the first would be the page announcing itself twice.
           */}
-          <p className="text-title font-medium" aria-hidden>
+          <p className="font-display text-display text-bolu" aria-hidden>
             {pick(COPY.sources.heading, locale)}
           </p>
           <p className="mt-2 max-w-prose text-body">{pick(COPY.sources.intro, locale)}</p>
@@ -111,25 +121,44 @@ export default function Sumber({ params }: { params: { locale: string; tradisi: 
           */}
           <hr className="rule mb-7 mt-12" />
 
-          <h2 className="text-lead font-medium text-bolu">
+          <h2 className="font-display text-title text-bolu">
             {pick(COPY.sources.tableHeading, locale)}
           </h2>
-          <div className="reveal mt-4 overflow-x-auto">
+          <ClassFilter
+            labels={{
+              measured: pick(COPY.provenance.measured, locale),
+              canon: pick(COPY.provenance.canon, locale),
+              interpolated: pick(COPY.provenance.interpolated, locale),
+            }}
+            all={pick(COPY.sources.filterAll, locale)}
+            groupLabel={pick(COPY.sources.filterGroup, locale)}
+          >
+          <div className="reveal mt-4 overflow-x-auto rounded border border-hairline bg-sheet">
             <table className="w-full min-w-table border-collapse text-left">
               <thead>
-                <tr className="border-b border-hairline">
+                <tr className="border-b border-muted">
                   <Th>{pick(COPY.sources.dimension, locale)}</Th>
                   <Th right>{pick(COPY.sources.value, locale)}</Th>
                   <Th>{pick(COPY.sources.klass, locale)}</Th>
-                  <Th>{pick(COPY.sources.note, locale)}</Th>
+                  <Th>{pick(COPY.sources.citation, locale)}</Th>
                 </tr>
               </thead>
               <tbody>
                 {t0.dims.map(({ key, dim }) => {
                   return (
-                    <tr key={key} className="border-b border-hairline align-top">
-                      <td className="py-3 pr-4">
-                        <span className="font-mono text-meta">{key}</span>
+                    <tr key={key} data-kelas={dim.class} className="border-b border-hairline align-top last:border-b-0">
+                      {/*
+                        What the number is, in words, leads the row: the
+                        stated first reader is a student, and `bayLength`
+                        is the repository's name for it, not theirs. The
+                        key stays under it, small, for anyone citing the
+                        code.
+                      */}
+                      <td className="py-3 pl-4 pr-4">
+                        <span className="block text-meta font-medium leading-snug text-bolu">
+                          {locale === 'id' ? dim.note : dim.noteEn}
+                        </span>
+                        <span className="mt-1 block font-mono text-micro text-muted">{key}</span>
                       </td>
                       <td className="num whitespace-nowrap py-3 pr-4 text-meta">
                         {formatValue(dim)}
@@ -143,19 +172,17 @@ export default function Sumber({ params }: { params: { locale: string; tradisi: 
                           s={sensitivityOf(sensitivity, key)}
                           label={t0.probeLabel}
                           pct={pct}
+                          worst={worstShift}
                           locale={locale}
                         />
                       </td>
                       <td className="py-3 pr-4">
                         <ProvenanceTag klass={dim.class} locale={locale} />
                       </td>
-                      <td className="py-3 text-meta leading-snug">
-                        {locale === 'id' ? dim.note : dim.noteEn}
-                        <span className="mt-1 block text-meta leading-snug text-muted">
-                          {dim.source === 'none'
-                            ? pick(COPY.sources.none, locale)
-                            : (t0.sources.find((x) => x.key === dim.source)?.citation ?? dim.source)}
-                        </span>
+                      <td className="py-3 pr-4 text-meta leading-snug text-muted">
+                        {dim.source === 'none'
+                          ? pick(COPY.sources.none, locale)
+                          : (t0.sources.find((x) => x.key === dim.source)?.citation ?? dim.source)}
                       </td>
                     </tr>
                   )
@@ -163,10 +190,11 @@ export default function Sumber({ params }: { params: { locale: string; tradisi: 
               </tbody>
             </table>
           </div>
+          </ClassFilter>
 
           <hr className="rule mb-7 mt-12" />
 
-          <h2 className="text-lead font-medium text-bolu">
+          <h2 className="font-display text-title text-bolu">
             {pick(COPY.sources.sourceHeading, locale)}
           </h2>
           <ul className="reveal mt-4 flex flex-col gap-4">
@@ -182,7 +210,7 @@ export default function Sumber({ params }: { params: { locale: string; tradisi: 
 
           <hr className="rule mb-7 mt-12" />
 
-          <h2 className="text-lead font-medium text-bolu">
+          <h2 className="font-display text-title text-bolu">
             {pick(COPY.sources.sensitivityHeading, locale)}
           </h2>
           <p className="mt-2 max-w-prose text-body text-muted">
@@ -242,7 +270,7 @@ export default function Sumber({ params }: { params: { locale: string; tradisi: 
 
           <hr className="rule mb-7 mt-12" />
 
-          <h2 className="text-lead font-medium text-bolu">
+          <h2 className="font-display text-title text-bolu">
             {pick(COPY.checks.heading, locale)}
           </h2>
           <p className="mt-2 max-w-prose text-body text-muted">
@@ -271,7 +299,7 @@ export default function Sumber({ params }: { params: { locale: string; tradisi: 
 
           <hr className="rule mb-7 mt-12" />
 
-          <h2 className="text-lead font-medium text-bolu">
+          <h2 className="font-display text-title text-bolu">
             {pick(COPY.checks.counterHeading, locale)}
           </h2>
           <p className="mt-2 max-w-prose text-body text-muted">
@@ -326,7 +354,7 @@ function formatValue(dim: Dim): string {
  */
 function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return (
-    <th scope="col" className={`micro pb-2 pr-4 font-normal ${right ? 'text-right' : ''}`}>
+    <th scope="col" className={`micro pb-2 pr-4 pt-3 font-normal first:pl-4 ${right ? 'text-right' : ''}`}>
       {children}
     </th>
   )
@@ -378,25 +406,46 @@ function CheckChip({ status, locale }: { status: CheckResult['status']; locale: 
 function IfWrong({
   s,
   pct,
+  worst,
   locale,
 }: {
   s: Sensitivity<Kinds> | undefined
   label: (key: string) => { id: string; en: string }
   pct: number
+  /** the largest shift in this house's table, which a full bar stands for */
+  worst: number
   locale: Locale
 }) {
   if (!s) return null
   return (
-    // `num`, because this is a measurement and DESIGN.md says every number is
-    // mono. `text-micro` alone carries the size and the tracking but not the
-    // family, so this was the one figure in the app set in letter-spaced sans,
-    // directly beneath a tabular one. Not `.micro` either: that uppercases,
-    // and a unit is not a label — it would render "1.80 M".
+    <>
+    {/*
+      The same figure as a length, so the guesses that matter are visible
+      down the column before anyone reads a number. Rara, because every row
+      that moves the house is a number the house depends on, and the bar is
+      the size of that dependence.
+    */}
+    {s.worst > 0 && worst > 0 ? (
+      <span className="mt-1.5 ml-auto block h-1 rounded bg-hairline" aria-hidden>
+        <span
+          className="block h-1 rounded bg-rara"
+          style={{ width: `${Math.max(4, (s.worst / worst) * 100)}%` }}
+        />
+      </span>
+    ) : null}
+    {/*
+      `num`, because this is a measurement and DESIGN.md says every number is
+      mono. `text-micro` alone carries the size and the tracking but not the
+      family, so this was the one figure in the app set in letter-spaced sans,
+      directly beneath a tabular one. Not `.micro` either: that uppercases,
+      and a unit is not a label — it would render "1.80 M".
+    */}
     <span className="num mt-1 block text-micro text-muted">
       {s.worst > 0
         ? `${fill(pick(COPY.sources.ifWrong, locale), { pct })}: ${s.worst.toFixed(2)} m`
         : pick(COPY.sources.sensitivityNone, locale)}
     </span>
+    </>
   )
 }
 

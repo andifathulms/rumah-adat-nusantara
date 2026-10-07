@@ -526,6 +526,25 @@ body {
     }
   }
 
+  /*
+   * An index card's silhouette rises out of its ground line as the card
+   * scrolls into view — the shelf's arrival, repeated at the scale of one
+   * house, so the index reads as built rather than listed. Scroll-driven
+   * like .reveal, so it costs no script and an engine without it shows the
+   * finished drawing.
+   */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .mark-raise path {
+        transform-box: fill-box;
+        transform-origin: 50% 100%;
+        animation: house-raise linear both;
+        animation-timeline: view();
+        animation-range: entry 20% entry 70%;
+      }
+    }
+  }
+
   @keyframes reveal-rise {
     from {
       opacity: 0;

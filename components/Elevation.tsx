@@ -18,8 +18,16 @@ const PAD = 1
 const GAP = 3
 /** metres of sheet below the ground line */
 const BELOW = 0.4
-/** the scale bar's length, metres — the drawing convention, not a dimension */
-const BAR = 5
+/**
+ * The scale bar's length, metres — the drawing convention, not a dimension.
+ * The largest round length that fits a third of the sheet: a five-metre bar
+ * was longer than the whole of a three-metre shelter, which made it a ruler
+ * laid beside the drawing rather than a scale on it.
+ */
+function barFor(viewW: number): number {
+  const fits = [1, 2, 5, 10, 20].filter((m) => m <= viewW / 3)
+  return fits[fits.length - 1] ?? 1
+}
 /**
  * The ground line's weight, in metres of the drawing.
  *
@@ -59,11 +67,14 @@ const DOT_R = 0.07
  * background in pixels would be a texture, and this is a measurement.
  */
 function MetreGrid({ id, w, h }: { id: string; w: number; h: number }) {
+  // A dot is a mark, not a disc: on a three-metre shelter's sheet a fixed
+  // seven-centimetre dot drew as a polka dot, so it shrinks with the sheet.
+  const r = Math.min(DOT_R, w * 0.0025)
   return (
     <>
       <defs>
         <pattern id={id} width={1} height={1} patternUnits="userSpaceOnUse">
-          <circle cx={0.5} cy={0.5} r={DOT_R} fill="var(--dot)" />
+          <circle cx={0.5} cy={0.5} r={f(r)} fill="var(--dot)" />
         </pattern>
       </defs>
       <rect x={0} y={0} width={f(w)} height={f(h)} fill={`url(#${id})`} />
@@ -126,6 +137,7 @@ function pathOf(s: Silhouette, ox: number, baseY: number): string {
  * resolve against the row, not against a shrink-wrapped span.
  */
 function ScaleBar({ viewW }: { viewW: number }) {
+  const BAR = barFor(viewW)
   return (
     <>
       <span
@@ -319,30 +331,60 @@ export function ElevationShelf({
 /**
  * One house on its own sheet, with the scale bar that makes it a drawing
  * rather than a picture.
+ *
+ * With `dimensions`, the sheet is also dimensioned the way a working drawing
+ * is: the overall length under the ground line and the overall height up the
+ * right-hand side, with ticks at the extents. Both are measured off the
+ * silhouette itself — the same loops the house is drawn with — so a dimension
+ * cannot disagree with the outline it labels. They are drawn in rara, because
+ * rara marks a number with no source and every one of these is that: no
+ * building here has been surveyed, and the caller says so in the legend line.
  */
 export function ElevationSheet({
   s,
   caption,
   frameless = false,
+  dimensions,
 }: {
   s: Silhouette
   caption: string
   /** true when the caller draws its own sheet frame around this drawing */
   frameless?: boolean
+  /**
+   * Draw the overall dimensions. `format` writes a length in metres in the
+   * reader's locale; `legend` is the line that names what the rara means.
+   */
+  dimensions?: { format: (metres: number) => string; legend: string }
 }) {
-  const W = s.max[0] - s.min[0] + PAD * 2
+  const length = s.max[0] - s.min[0]
+  const height = s.max[1]
+  /*
+   * Everything a dimension adds is sized from the house, not fixed: a sudung
+   * is three metres long and a betang sixty, and one sheet draws either. The
+   * unit is a share of the sheet's width, and the sheet always fills its
+   * column, so lettering lands at the same size on the page whichever house
+   * it is. On a phone that size is small, which is why the legend line under
+   * the drawing repeats both figures in body type.
+   */
+  const u = (length + PAD * 2) / 100
+  const dim = dimensions ? { off: 3.5 * u, tick: 1 * u, text: 2.2 * u, room: 8 * u } : null
+  const W = s.max[0] - s.min[0] + PAD * 2 + (dim ? dim.room : 0)
   const baseY = s.max[1] + PAD
-  const H = baseY + BELOW
+  const H = baseY + BELOW + (dim ? dim.room : 0)
+  const x0 = PAD
+  const x1 = PAD + length
+  const top = baseY - height
   return (
     <div className={frameless ? 'px-4 pt-5' : 'rounded border border-hairline px-4 pt-5'}>
       <svg viewBox={`0 0 ${f(W)} ${f(H)}`} className="w-full" aria-hidden="true">
+        {dim ? <MetreGrid id="lembar-meter" w={W} h={baseY} /> : null}
         <line
           x1={0}
           y1={f(baseY)}
           x2={f(W)}
           y2={f(baseY)}
           stroke="var(--muted)"
-          strokeWidth={RULE_W}
+          strokeWidth={f(Math.min(RULE_W, W * 0.004))}
           pathLength={1}
           className="rule-draw"
         />
@@ -353,11 +395,50 @@ export function ElevationSheet({
           className="house-raise"
           style={{ animationDelay: 'var(--t-layout)' }}
         />
+        {dim && dimensions ? (
+          <g stroke="var(--rara)" strokeWidth={f(0.18 * u)} fill="none">
+            {/* the overall length, under the ground line */}
+            <line x1={f(x0)} y1={f(baseY + dim.off)} x2={f(x1)} y2={f(baseY + dim.off)} />
+            <line x1={f(x0)} y1={f(baseY + dim.off - dim.tick)} x2={f(x0)} y2={f(baseY + dim.off + dim.tick)} />
+            <line x1={f(x1)} y1={f(baseY + dim.off - dim.tick)} x2={f(x1)} y2={f(baseY + dim.off + dim.tick)} />
+            {/* the overall height, up the right-hand side */}
+            <line x1={f(x1 + dim.off)} y1={f(top)} x2={f(x1 + dim.off)} y2={f(baseY)} />
+            <line x1={f(x1 + dim.off - dim.tick)} y1={f(top)} x2={f(x1 + dim.off + dim.tick)} y2={f(top)} />
+            <line x1={f(x1 + dim.off - dim.tick)} y1={f(baseY)} x2={f(x1 + dim.off + dim.tick)} y2={f(baseY)} />
+          </g>
+        ) : null}
+        {dim && dimensions ? (
+          <g fill="var(--rara)" fontFamily="var(--font-mono)" fontSize={f(dim.text)}>
+            <text x={f((x0 + x1) / 2)} y={f(baseY + dim.off + dim.text * 1.25)} textAnchor="middle">
+              {dimensions.format(length)}
+            </text>
+            <text
+              x={f(x1 + dim.off + dim.text * 1.1)}
+              y={f((top + baseY) / 2)}
+              textAnchor="middle"
+              transform={`rotate(90 ${f(x1 + dim.off + dim.text * 1.1)} ${f((top + baseY) / 2)})`}
+            >
+              {dimensions.format(height)}
+            </text>
+          </g>
+        ) : null}
       </svg>
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-hairline py-3">
         <ScaleBar viewW={W} />
         <p className="micro ml-auto text-muted">{caption}</p>
       </div>
+      {dimensions ? (
+        <p className="-mt-1 flex items-center gap-2 pb-3 text-meta text-muted">
+          <span aria-hidden className="inline-block h-px w-5 shrink-0 bg-rara" />
+          <span>
+            <span className="num text-rara">
+              {dimensions.format(length)} × {dimensions.format(height)}
+            </span>
+            {' · '}
+            {dimensions.legend}
+          </span>
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -381,7 +462,7 @@ export function ElevationMark({
   const H = baseY + BELOW
   const ox = PAD + (frame.w - (s.max[0] - s.min[0])) / 2
   return (
-    <svg viewBox={`0 0 ${f(W)} ${f(H)}`} className="w-full" aria-hidden="true">
+    <svg viewBox={`0 0 ${f(W)} ${f(H)}`} className="mark-raise w-full" aria-hidden="true">
       <line
         x1={0}
         y1={f(baseY)}

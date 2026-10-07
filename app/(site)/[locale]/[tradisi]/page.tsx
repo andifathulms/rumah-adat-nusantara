@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { MakerSignature } from '@/components/MakerSignature'
 import { LocaleSwitch } from '@/components/LocaleSwitch'
 import { ElevationSheet } from '@/components/Elevation'
+import { RouteIcon } from '@/components/RouteIcon'
 import { SplitBar, SplitLegend } from '@/components/split'
 import { silhouette } from '@/lib/core/silhouette'
 import {
@@ -105,7 +106,19 @@ export default function House({ params }: { params: { locale: string; tradisi: s
             {pick(COPY.computed, locale)}
           </p>
         </div>
-        <ElevationSheet s={s} caption={pick(COPY.landing.elevationCaption, locale)} frameless />
+        <ElevationSheet
+          s={s}
+          caption={pick(COPY.landing.elevationCaption, locale)}
+          frameless
+          dimensions={{
+            format: (m) =>
+              `${m.toLocaleString(locale === 'id' ? 'id-ID' : 'en-GB', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })} m`,
+            legend: pick(COPY.landing.dimensionLegend, locale),
+          }}
+        />
         {/*
           The generator's own figures for the default house. Mono,
           right-aligned, with their units — outputs of the same run the
@@ -127,14 +140,14 @@ export default function House({ params }: { params: { locale: string; tradisi: s
       <hr className="rule my-8" />
 
       <section>
-        <h2 className="micro mb-3">{pick(COPY.orientation.heading, locale)}</h2>
+        <h2 className="mb-3 font-display text-title text-bolu">{pick(COPY.orientation.heading, locale)}</h2>
         <p className="text-body text-bolu">{t.orientation[locale]}</p>
       </section>
 
       <hr className="rule my-8" />
 
       <section>
-        <h2 className="micro mb-3">{pick(COPY.provenance.heading, locale)}</h2>
+        <h2 className="mb-3 font-display text-title text-bolu">{pick(COPY.provenance.heading, locale)}</h2>
         <SplitBar split={t.split} className="h-2" />
         <div className="mt-3">
           <SplitLegend locale={locale} split={t.split} />
@@ -145,16 +158,40 @@ export default function House({ params }: { params: { locale: string; tradisi: s
       <hr className="rule my-8" />
 
       <section>
-        <h2 className="micro mb-4">{pick(COPY.landing.doorsHeading, locale)}</h2>
+        <h2 className="mb-4 font-display text-title text-bolu">{pick(COPY.landing.doorsHeading, locale)}</h2>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {ROUTES.map((r) => (
-            <li key={r} className="h-full">
+          {/*
+            The first door is the one the whole project is for — change a
+            rule, watch the house answer — so it is drawn as the primary
+            control, in soot, and spans the row. The others are equal
+            readings of the same house.
+          */}
+          {ROUTES.map((r, i) => (
+            <li key={r} className={i === 0 ? 'h-full sm:col-span-2' : 'h-full'}>
               <Link
                 href={`${href(locale, t.slug, r)}/`}
-                className="press flex h-full flex-col gap-1 rounded border border-hairline bg-sheet px-4 py-4 transition-colors duration-state hover:border-muted hover:bg-wash"
+                className={[
+                  'press lift flex h-full items-center gap-4 rounded border px-4 py-4',
+                  i === 0
+                    ? 'border-bolu bg-bolu text-kapur'
+                    : 'border-hairline bg-sheet text-bolu hover:border-muted',
+                ].join(' ')}
               >
-                <span className="text-lead text-bolu">{pick(COPY.nav[r], locale)}</span>
-                <span className="text-body text-muted">{pick(COPY.navGloss[r], locale)}</span>
+                <span
+                  className={[
+                    'grid h-12 w-12 shrink-0 place-items-center rounded border',
+                    i === 0 ? 'border-muted-on-ink' : 'border-hairline bg-film',
+                  ].join(' ')}
+                >
+                  <RouteIcon route={r} />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="font-display text-title leading-tight">{pick(COPY.nav[r], locale)}</span>
+                  <span className={i === 0 ? 'text-body text-muted-on-ink' : 'text-body text-muted'}>
+                    {pick(COPY.navGloss[r], locale)}
+                  </span>
+                </span>
+                <span aria-hidden className="lift-arrow text-lead">→</span>
               </Link>
             </li>
           ))}
@@ -167,10 +204,16 @@ export default function House({ params }: { params: { locale: string; tradisi: s
           <li className="h-full">
             <Link
               href={`/${locale}/banding/?a=${t.slug}`}
-              className="press flex h-full flex-col gap-1 rounded border border-hairline bg-sheet px-4 py-4 transition-colors duration-state hover:border-muted hover:bg-wash"
+              className="press lift flex h-full items-center gap-4 rounded border border-dashed border-muted px-4 py-4 text-bolu"
             >
-              <span className="text-lead text-bolu">{pick(COPY.banding.title, locale)}</span>
-              <span className="text-body text-muted">{pick(COPY.banding.doorGloss, locale)}</span>
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded border border-hairline bg-film">
+                <RouteIcon route="banding" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="font-display text-title leading-tight">{pick(COPY.banding.title, locale)}</span>
+                <span className="text-body text-muted">{pick(COPY.banding.doorGloss, locale)}</span>
+              </span>
+              <span aria-hidden className="lift-arrow text-lead">→</span>
             </Link>
           </li>
         </ul>

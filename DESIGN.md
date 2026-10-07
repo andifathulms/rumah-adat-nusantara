@@ -89,6 +89,12 @@ A surveyor's sheet: title block left, drawing right.
 
 Below 860px the rail moves under the viewport and scrolls. The viewport never gets less than half the screen. A scale bar sits bottom-left of the viewport at all times.
 
+### The working routes, after the second pass
+
+- The rail leads with *which house* — breadcrumb, name in the condensed face, the four readings as one tab bar — and then the rules. The claim is the landing's and the front door's; a reader on a working route has passed one of them.
+- Over the model: the readout folds (folded by default under 860px), the drag hint is a single chip, and nothing overlaps the scale bar.
+- A front door's elevation is a dimensioned drawing: overall length and height measured off the silhouette, drawn in rara because no building here has a survey behind it, and the legend line under the drawing names that and repeats both figures in body type for a phone.
+
 ## Motion
 
 **Drag-only rotation. There is no idle turntable, ever.** A spinning model reads as a screensaver and tells the reader the object is decorative. Rotation is something the reader does.

@@ -212,6 +212,15 @@ export const COPY = {
       'Siluet tampak {house}, digambar dari bagian-bagian model.',
       'The elevation silhouette of {house}, drawn from the model’s parts.',
     ),
+    /*
+     * The legend for the dimension lines on a front door's elevation: what
+     * they measure and why they are rara. A colour on a drawing is named on
+     * the drawing.
+     */
+    dimensionLegend: t(
+      'Panjang dan tinggi keseluruhan, diukur dari siluet model. Merah: belum ada sumber survei.',
+      'Overall length and height, measured off the model’s silhouette. Red: no survey behind it yet.',
+    ),
     elevationCaption: t(
       'Tampak, digambar dari bagian-bagian model pada aturan bakunya.',
       'The elevation, drawn from the model’s parts at its default rules.',
@@ -582,6 +591,8 @@ export const COPY = {
     klass: t('Kelas', 'Class'),
     citation: t('Kutipan', 'Citation'),
     note: t('Keterangan', 'What it means'),
+    filterAll: t('Semua', 'All'),
+    filterGroup: t('Saring menurut kelas', 'Filter by class'),
     none: t('Tidak ada sumber', 'No source'),
     intro: t(
       'Setiap ukuran yang membentuk rumah ini ada di bawah, beserta kelas dan kutipannya. Inilah lapisan kejujuran proyek ini, dan ia diberi ruangnya sendiri karena gambar tiga dimensi yang mulus menyiratkan ketelitian yang tidak dimiliki sumbernya.',
