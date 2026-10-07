@@ -152,6 +152,10 @@ export class HouseScene {
     this.sunLight.shadow.mapSize.set(2048, 2048)
     this.sunLight.shadow.bias = -0.0006
     this.sunLight.shadow.normalBias = 0.02
+    // The sun still sees what the view has set aside: a barn moved off the
+    // view's layer because it stood between the reader and the house keeps
+    // throwing its shadow across the yard. See SiteRig.clearSightOf.
+    this.sunLight.shadow.camera.layers.enable(SET_ASIDE)
     this.scene.add(this.sunLight)
     this.scene.add(this.sunLight.target)
 
@@ -497,7 +501,19 @@ export class HouseScene {
         // in both houses, so this is one azimuth and not a per-tradition one.
         // Near-horizontal, so it reads as an elevation rather than a
         // three-quarter view.
-        return { azimuth: Math.PI, polar: Math.PI / 2 - 0.03, distance: distance * 0.66, target }
+        //
+        // The distance is fitted to the front elevation itself — the house's
+        // width across Z and its height — plus half its depth, because the
+        // camera aims at the centre and the front face is that much nearer.
+        // It was a fixed two-thirds of the three-quarter view's distance,
+        // which cropped the top off any house taller than it is wide: the
+        // tongkonan's prows went out of the frame.
+        return {
+          azimuth: Math.PI,
+          polar: Math.PI / 2 - 0.03,
+          distance: house ? this.fitFront(house) : distance * 0.66,
+          target,
+        }
       case 'potongan': {
         // Square on to the cut face, whichever axis the tradition cuts on.
         // Near-horizontal, so the zones stack the way they stack in the
@@ -527,9 +543,23 @@ export class HouseScene {
          * person is; the aim is at the middle of the front rather than the
          * centroid, so a tall roof does not pitch the whole frame skyward.
          */
+        //
+        // The direction is the tradition's; the distance along it is checked.
+        // An `approachAt` written as "a few metres in front of the door" put
+        // the eye inside the thatch of a mbaru niang, under the eave of a
+        // rumah gadang and against the face of a tongkonan — a person stands
+        // in the yard, not in the roof. So the eye keeps the bearing the
+        // tradition gave and steps back along it until it is clear of the
+        // house's plan and the whole front, ridge included, fits the frame.
         const at = model ? model.approachAt : ([-12, 0, 0] as const)
-        const eye = new THREE.Vector3(at[0], FIGURE_HEIGHT, at[2])
         const aim = new THREE.Vector3(0, house ? house.bounds.max[1] * 0.42 : 3, 0)
+        const back = house ? this.yardDistance(house, at[0], at[2], aim.y) : Math.hypot(at[0], at[2])
+        const bearing = Math.atan2(at[2], at[0])
+        const eye = new THREE.Vector3(
+          Math.cos(bearing) * back,
+          FIGURE_HEIGHT,
+          Math.sin(bearing) * back,
+        )
         const away = eye.clone().sub(aim)
         const range = Math.max(4, away.length())
         return {
@@ -540,6 +570,22 @@ export class HouseScene {
         }
       }
       case 'kolong':
+        // A house that sits on the earth has no under-floor to drop into —
+        // the honai and the ume kbubu hold their fire's heat in the ground on
+        // purpose, so their underfloor height is zero. Looking up from 55% of
+        // nothing put the camera under the ground plane. The view stays at a
+        // crouch instead: just off the ground, looking at where the house
+        // meets it, which is the answer this view gives for them.
+        if (model && model.underfloorHeight < 0.6) {
+          return {
+            azimuth: -2.5,
+            polar: Math.PI / 2 - 0.1,
+            // From outside the plan: a round house's ridge reach is a few
+            // tens of centimetres, and a multiple of it put the eye in the wall.
+            distance: Math.max(model.ridgeReach * 1.6, distance * 0.7),
+            target: new THREE.Vector3(0, 0.6, 0),
+          }
+        }
         // Drops under the floor and looks up.
         return {
           azimuth: -2.5,
@@ -577,6 +623,58 @@ export class HouseScene {
     // A little air around the model: this is a drawing on a sheet, not a
     // photograph cropped to its subject.
     return (radius / Math.sin(Math.min(vfov, hfov) / 2)) * 1.18
+  }
+
+  /**
+   * How far back from the centre to stand for the front elevation: the
+   * larger of what the height and the width need, plus half the depth.
+   */
+  private fitFront(house: AnyHouse): number {
+    const [minX, minY, minZ] = house.bounds.min
+    const [maxX, maxY, maxZ] = house.bounds.max
+    const vfov = (this.camera.fov * Math.PI) / 180
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * this.camera.aspect)
+    const halfH = (maxY - minY) / 2
+    const halfW = (maxZ - minZ) / 2
+    const fit = Math.max(halfH / Math.tan(vfov / 2), halfW / Math.tan(hfov / 2))
+    return fit * 1.15 + (maxX - minX) / 2
+  }
+
+  /**
+   * How far from the house's centre a person must stand, on a given bearing,
+   * to be in the yard and see the whole front.
+   *
+   * Three conditions, and the answer is the farthest of them: the tradition's
+   * own approach distance; clear of the plan by two metres (a box's reach in
+   * a direction is |cos|·halfX + |sin|·halfZ); and far enough that the
+   * highest point of the house sits inside the upper edge of the frame when
+   * the camera, at eye height, aims at `aimY`. The last is solved by walking
+   * outward, because the aim and the top move together and a closed form
+   * would hide that.
+   */
+  private yardDistance(house: AnyHouse, atX: number, atZ: number, aimY: number): number {
+    const [minX, , minZ] = house.bounds.min
+    const [maxX, maxY, maxZ] = house.bounds.max
+    const bearing = Math.atan2(atZ, atX)
+    const c = Math.abs(Math.cos(bearing))
+    const sn = Math.abs(Math.sin(bearing))
+    const reach =
+      c * Math.max(Math.abs(minX), Math.abs(maxX)) + sn * Math.max(Math.abs(minZ), Math.abs(maxZ))
+    const halfAcross =
+      sn * Math.max(Math.abs(minX), Math.abs(maxX)) + c * Math.max(Math.abs(minZ), Math.abs(maxZ))
+    const vfov = (this.camera.fov * Math.PI) / 180
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * this.camera.aspect)
+    let d = Math.max(Math.hypot(atX, atZ), reach + 2)
+    for (let i = 0; i < 400; i++) {
+      // the nearest face is `reach` closer than the centre
+      const face = Math.max(0.5, d - reach)
+      const topAngle = Math.atan2(maxY - FIGURE_HEIGHT, face)
+      const aimAngle = Math.atan2(aimY - FIGURE_HEIGHT, d)
+      const sideAngle = Math.atan2(halfAcross, face)
+      if (topAngle - aimAngle <= vfov * 0.46 && sideAngle <= hfov * 0.5) break
+      d += 0.5
+    }
+    return d
   }
 
   private fitCamera(): void {
@@ -626,6 +724,10 @@ export class HouseScene {
       target.z + distance * Math.sin(polar) * Math.sin(azimuth),
     )
     this.camera.lookAt(target)
+    if (this.house && this.site.group.visible) {
+      this.scene.updateMatrixWorld()
+      this.site.clearSightOf(this.camera.position, sightPoints(this.house))
+    }
     this.renderer.render(this.scene, this.camera)
     this.needsRender = false
   }
@@ -898,6 +1000,54 @@ class SiteRig {
   readonly group = new THREE.Group()
   private lines: THREE.LineSegments | null = null
   private meshes: THREE.Mesh[] = []
+  /** the solids among the meshes: the only things in the setting tall enough to hide anything */
+  private solids: THREE.Mesh[] = []
+  private readonly ray = ((): THREE.Raycaster => {
+    // The rays must see a solid on either layer: a raycaster tests only its
+    // own layers, so one already set aside would be missed on the next frame,
+    // put back, found again — set aside and restored on alternate frames.
+    const r = new THREE.Raycaster()
+    r.layers.enableAll()
+    return r
+  })()
+
+  /**
+   * Set aside any solid standing between the eye and the house.
+   *
+   * The setting was accepted on one condition: nothing in it may hide any
+   * part of a house. From the three-quarter view that held by luck; square
+   * on to the front, a neighbour's roof across the road, a row of sa'o, a
+   * barn in the yard stood in front of the building the page is about. So
+   * before each frame a ray goes from the eye to points through the house's
+   * volume, and a solid that any of them meets first is moved to a layer the
+   * view camera does not draw. The sun's camera does draw it, so its shadow
+   * stays where the sun puts it. Drag round and it comes back.
+   */
+  clearSightOf(eye: THREE.Vector3, targets: readonly THREE.Vector3[]): void {
+    if (this.solids.length === 0) return
+    const blocked = new Set<THREE.Object3D>()
+    // A ray that starts inside a solid never meets its faces, so an eye that
+    // has stepped back into a granary would see straight through the check
+    // and into the granary's dark. Standing inside a solid is blocking by
+    // definition.
+    const box = new THREE.Box3()
+    for (const mesh of this.solids) {
+      if (box.setFromObject(mesh).containsPoint(eye)) blocked.add(mesh)
+    }
+    const dir = new THREE.Vector3()
+    for (const t of targets) {
+      dir.subVectors(t, eye)
+      const far = dir.length()
+      if (far < 1e-6) continue
+      this.ray.set(eye, dir.normalize())
+      this.ray.far = far - 0.05
+      for (const hit of this.ray.intersectObjects(this.solids, false)) blocked.add(hit.object)
+    }
+    for (const mesh of this.solids) {
+      if (blocked.has(mesh)) mesh.layers.set(SET_ASIDE)
+      else mesh.layers.set(0)
+    }
+  }
   /** where each mark's caption is anchored, in world metres */
   private anchorsByKey = new Map<string, THREE.Vector3>()
   /** what the reader asked for, and whether there is light to see it by */
@@ -1141,6 +1291,10 @@ class SiteRig {
     mesh.castShadow = volume.material !== 'air' && volume.material !== 'tanah'
     mesh.receiveShadow = true
     this.meshes.push(mesh)
+    // Water is a sheet the house stands in, not a thing in front of it: the
+    // kariwari's posts are below the waterline by design, and setting the bay
+    // aside to show them would draw a house in a dry hole.
+    if (volume.material !== 'air') this.solids.push(mesh)
     this.group.add(mesh)
   }
 
@@ -1308,6 +1462,7 @@ class SiteRig {
       ;(mesh.material as THREE.Material).dispose()
     }
     this.meshes = []
+    this.solids = []
     this.anchorsByKey.clear()
     if (!this.lines) return
     this.group.remove(this.lines)
@@ -1330,6 +1485,29 @@ class SiteRig {
  * because those would be the first things in this scene pretending to be
  * observed rather than made.
  */
+/** The layer a site solid is moved to when it would hide the house. */
+const SET_ASIDE = 1
+
+/**
+ * Points through the house's volume that the eye must be able to reach: a
+ * three-by-three-by-three lattice inset from the bounds, so a corner of empty
+ * air beside a prow does not count as a part of the house a barn may not hide.
+ */
+function sightPoints(house: AnyHouse): THREE.Vector3[] {
+  const [x0, y0, z0] = house.bounds.min
+  const [x1, y1, z1] = house.bounds.max
+  const at = [0.15, 0.5, 0.85]
+  const out: THREE.Vector3[] = []
+  for (const fx of at) {
+    for (const fy of at) {
+      for (const fz of at) {
+        out.push(new THREE.Vector3(x0 + (x1 - x0) * fx, y0 + (y1 - y0) * fy, z0 + (z1 - z0) * fz))
+      }
+    }
+  }
+  return out
+}
+
 const siteMaterials = new Map<string, THREE.MeshStandardMaterial>()
 
 function siteMaterial(key: SiteVolume['material']): THREE.MeshStandardMaterial {
