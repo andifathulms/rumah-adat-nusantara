@@ -138,7 +138,41 @@ export function checkOneLowDoor(house: House, layout: Layout): CheckResult {
  */
 export function checkNoOtherOpening(house: House, layout: Layout): CheckResult {
   const faults: string[] = []
-  const courses = house.parts.filter((p) => p.stage === 'atap')
+  const courses = house.parts.filter((p) => p.stage === 'atap' && p.id.startsWith('atap-'))
+  /*
+   * The foot: closed from the ground up into the lowest course, all the way
+   * round but for the door. Neither form had one built, and this check passed
+   * both — a band of air round the house is not a part, so nothing named it.
+   */
+  const foot = house.parts.find((p) => p.id === 'kaki-dinding')
+  const lowestCourse = Math.min(...courses.map((p) => partBounds(p).min[1]))
+  if (!foot) faults.push('nothing closes the circumference under the eave')
+  else {
+    const fb = partBounds(foot)
+    if (fb.min[1] > TOL) faults.push('the foot of the house stops above the ground')
+    if (fb.max[1] < lowestCourse + TOL) faults.push('the foot of the house does not reach up under the thatch')
+    if (foot.kind === 'mesh') {
+      const bearings = new Set<number>()
+      for (let i = 0; i < foot.positions.length; i += 3) {
+        const a = Math.atan2(foot.positions[i + 2] ?? 0, foot.positions[i] ?? 0)
+        bearings.add(Math.round(((a + Math.PI * 2) % (Math.PI * 2)) * 1e6) / 1e6)
+      }
+      const sorted = [...bearings].sort((x, y) => x - y)
+      const step = (Math.PI * 2) / layout.facets
+      let others = 0
+      for (let i = 0; i < sorted.length; i++) {
+        const from = sorted[i] ?? 0
+        const to = i + 1 < sorted.length ? (sorted[i + 1] ?? 0) : (sorted[0] ?? 0) + Math.PI * 2
+        const gap = to - from
+        if (gap > step * 1.01) {
+          const mid = (from + to) / 2
+          const isDoor = gap <= layout.door.halfAngle * 2 + 1e-6 && Math.abs(Math.cos(mid) + 1) < 1e-3
+          if (!isDoor) others++
+        }
+      }
+      if (others > 0) faults.push(`${others} gaps round the foot of the house that are not the door`)
+    }
+  }
   if (courses.length !== DIMS.thatchCourses.value) {
     faults.push(`${courses.length} courses of thatch, expected ${DIMS.thatchCourses.value}`)
   }
@@ -151,6 +185,22 @@ export function checkNoOtherOpening(house: House, layout: Layout): CheckResult {
    * the profile starts on and comparing against the bare figure would fail a
    * roof that is doing exactly what it should.
    */
+  /*
+   * And every course laps the one below it: its lowest edge sits below the
+   * highest edge of the course it covers. Without that, each join is a ring
+   * of open air — a slot this check once passed seven times over, because
+   * counting courses and finding no part called a window cannot see a gap
+   * between two parts.
+   */
+  const byOrder = [...courses].sort((a, b) => a.order - b.order)
+  for (let i = 1; i < byOrder.length; i++) {
+    const below = byOrder[i - 1]
+    const above = byOrder[i]
+    if (!below || !above) continue
+    if (partBounds(above).min[1] >= partBounds(below).max[1] - TOL) {
+      faults.push(`${above.id} starts above the head of ${below.id}, leaving a slot round the dome`)
+    }
+  }
   const lowest = Math.min(...courses.map((p) => partBounds(p).min[1]))
   const allowance = DIMS.thatchBed.value + DIMS.thatchThickness.value
   if (lowest > layout.wallY + allowance + TOL) faults.push('the thatch stops above the wall it should meet')

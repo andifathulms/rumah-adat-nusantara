@@ -109,6 +109,7 @@ export const DIMS = {
   facets: dim(24, 'count', 'interpolated', 'none', 'Banyaknya sisi kerucut yang digambar. Angka tesselasi, bukan ukuran bangunan.', 'How many facets the cone is drawn with. A tessellation count, not a dimension of the building.'),
   wallHeight: dim(1.05, 'm', 'interpolated', 'none', 'Tinggi dinding kayu rendah, pada bentuk yang memakainya.', 'Height of the low timber wall, on the form that has one.'),
   eaveHeight: dim(0.35, 'm', 'interpolated', 'none', 'Tinggi tepi atap di atas tanah pada bentuk yang atapnya turun sampai bawah — hampir menyentuh, dan tidak ada dinding sama sekali.', 'Height of the eave above the ground on the form whose thatch comes down — nearly touching, and there is no wall at all.'),
+  wallBoard: dim(0.06, 'm', 'interpolated', 'none', 'Tebal dinding kayu rendah, atau kaki alang-alang yang diteruskan sampai tanah pada bentuk tanpa dinding. Apa pun bentuknya, keliling di bawah tepi atap tertutup kecuali pintu: rumah yang menahan asap tidak boleh punya sabuk terbuka di kakinya.', 'Thickness of the low timber wall, or of the skirt of thatch carried down to the ground on the form with no wall. Either way the circumference under the eave is closed but for the door: a house that holds smoke in may not have an open band round its foot.'),
   domeRise: dim(2.9, 'm', 'interpolated', 'none', 'Tinggi puncak kubah di atas tepi atap.', 'Rise of the dome above the eave.'),
   postSection: dim(0.14, 'm', 'interpolated', 'none', 'Sisi penampang tiang.', 'Section of a post.'),
   postCount: dim(6, 'count', 'interpolated', 'none', 'Banyaknya tiang dalam lingkaran, di luar tiang tengah.', 'How many posts stand in the ring, besides the centre post.'),
@@ -117,6 +118,7 @@ export const DIMS = {
   thatchBed: dim(0.05, 'm', 'interpolated', 'none', 'Jarak lapisan alang-alang dari rangkanya.', 'How far the thatch stands off its frame.'),
   thatchThickness: dim(0.16, 'm', 'interpolated', 'none', 'Tebal lapisan alang-alang.', 'Thickness of the thatch.'),
   thatchCourses: dim(7, 'count', 'interpolated', 'none', 'Banyaknya lapis alang-alang dari bawah ke puncak.', 'How many courses of thatch run from the eave to the apex.'),
+  thatchLap: dim(0.5, 'ratio', 'interpolated', 'none', 'Bagian lapis yang tertindih lapis di atasnya. Tanpa tindihan, tiap sambungan antarlapis adalah celah melingkar — dan atap yang harus menahan asap di dalam tidak boleh punya satu pun.', 'The share of a course the course above laps. Without a lap every join between courses is a slot round the whole dome — and a roof that has to keep smoke in may not have one.'),
 
   /* the loft, which is why the building exists */
   loftBase: dim(1.45, 'm', 'interpolated', 'none', 'Tinggi lantai para di atas tanah untuk simpanan satu panen. Ini angka yang paling penting dalam pak ini: terlalu rendah dan jagungnya hangus, terlalu tinggi dan asapnya sudah dingin sebelum sampai.', 'Height of the loft floor above the ground for one harvest. It is the most consequential figure in this pack: too low and the maize scorches, too high and the smoke is cold before it arrives.'),

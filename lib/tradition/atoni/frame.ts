@@ -14,6 +14,7 @@
 
 import { clamp01 } from '@/lib/core/geometry'
 import { coneFractionAt, coneSurface } from '@/lib/core/cone'
+import { courseBands } from '@/lib/core/courses'
 import type { ConePoint } from '@/lib/core/cone'
 import { shiftMesh } from '@/lib/core/geometry'
 import { partBuilders } from '@/lib/core/parts'
@@ -281,9 +282,63 @@ export function buildHouseParts(layout: Layout): { parts: readonly Part[]; joint
   const bed = DIMS.thatchBed.value
   const thickness = DIMS.thatchThickness.value
   const fDoor = coneFractionAt(layout.profile, layout.door.height + jamb)
-  for (let c = 0; c < courses; c++) {
-    const from = c / courses
-    const to = (c + 1) / courses
+  /*
+   * The foot of the house, closed all round but for the door.
+   *
+   * Both forms named a perimeter and neither built one. On the default the
+   * thatch was said to come down nearly to the ground with no gap anywhere
+   * but the door, and it stopped thirty-five centimetres up with nothing
+   * under it; on the low-wall form the wall was a dimension in the table and
+   * a metre of open air in the model. So it is built now, of the material
+   * the form says — thatch carried down to the ground, or timber — tucked
+   * under the lowest course by the depth of a course of thatch, and cut by
+   * the same doorway as the courses above it.
+   */
+  {
+    const wall = DIMS.wallBoard.value
+    const rOut = layout.radius + bed
+    const rIn = rOut - wall
+    const top = layout.wallY + thickness
+    const penuh = layout.rules.dinding === 'penuh'
+    parts.push(
+      mesh(
+        'kaki-dinding',
+        penuh
+          ? { name: 'alang-alang', nameId: 'Kaki alang-alang', nameEn: 'Thatch skirt to the ground' }
+          : { name: 'dinding', nameId: 'Dinding kayu rendah', nameEn: 'Low timber wall' },
+        'atap',
+        0,
+        penuh ? 'alang' : 'kayu',
+        ['wallBoard', penuh ? 'eaveHeight' : 'wallHeight', 'thatchThickness', 'oneLowDoor'],
+        coneSurface(
+          [
+            { r: rOut, y: 0 },
+            { r: rOut, y: top },
+            { r: rIn, y: top },
+            { r: rIn, y: 0 },
+          ],
+          {
+            facets: layout.facets,
+            uvScale: 0.4,
+            gap: { from: Math.PI - layout.door.halfAngle, to: Math.PI + layout.door.halfAngle },
+          },
+        ),
+      ),
+    )
+  }
+
+  /*
+   * Lapped, through the same arithmetic every other thatched roof here uses:
+   * each course's foot reaches down past the head of the one below. These
+   * courses were once cut edge to edge, each standing off its frame further
+   * at its foot than at its head, so at every join the course above began a
+   * hand's breadth outside the one below — a slot round the whole dome at
+   * every course, on the one roof here whose job is to keep smoke in.
+   */
+  for (const band of courseBands(courses, DIMS.thatchLap.value)) {
+    const c = band.course
+    const from = 1 - band.foot
+    const to = 1 - band.head
     const span = Math.max(1e-6, to - from)
     const cut = from < fDoor
     parts.push(
@@ -291,9 +346,9 @@ export function buildHouseParts(layout: Layout): { parts: readonly Part[]; joint
         `atap-${c}`,
         { name: 'alang-alang', nameId: `Lapis alang-alang ${c + 1}`, nameEn: `Thatch course ${c + 1}` },
         'atap',
-        c,
+        c + 1,
         'alang',
-        ['thatchBed', 'thatchThickness', 'thatchCourses', 'domeRise', 'oneLowDoor'],
+        ['thatchBed', 'thatchThickness', 'thatchCourses', 'thatchLap', 'domeRise', 'oneLowDoor'],
         coneSurface(layout.profile, {
           facets: layout.facets,
           uvScale: 0.4,

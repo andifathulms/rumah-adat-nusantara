@@ -70,7 +70,7 @@ describe('a roof with a second job', () => {
     for (const rules of COMBOS) {
       const { house, layout } = buildHouse(rules)
       expect(checkNoOtherOpening(house, layout).status).toBe('pass')
-      expect(house.parts.filter((p) => p.stage === 'atap')).toHaveLength(DIMS.thatchCourses.value)
+      expect(house.parts.filter((p) => p.id.startsWith('atap-'))).toHaveLength(DIMS.thatchCourses.value)
       expect(house.parts.filter((p) => p.name === 'kusen')).toHaveLength(2)
     }
   })
@@ -270,5 +270,38 @@ describe('provenance', () => {
     const split = partSplit(house.parts)
     expect(split.measured).toBe(0)
     expect(split.interpolated).toBe(split.total)
+  })
+})
+
+/*
+ * The lap is what makes the courses one roof. Take it away and every join is
+ * a ring of air round the dome — the state this house shipped in, which the
+ * check passed because it counted courses and looked for parts named window.
+ * It must refuse that now, with nothing else about the building changed.
+ */
+describe('a thatch that keeps smoke in', () => {
+  it('refuses courses laid edge to edge with no lap', () => {
+    const lapped = buildHouse(DEFAULT_RULES)
+    expect(checkNoOtherOpening(lapped.house, lapped.layout).status).toBe('pass')
+    withDimValue('thatchLap', -0.5, () => {
+      const bare = buildHouse(DEFAULT_RULES)
+      expect(checkNoOtherOpening(bare.house, bare.layout).status).toBe('fail')
+    })
+  })
+})
+
+/*
+ * Both forms named a perimeter and neither built one: a band of air round
+ * the foot of a house whose purpose is holding smoke. Take the foot away and
+ * the check must say so, on either form.
+ */
+describe('the foot of the house', () => {
+  it('is closed but for the door on both forms, and refused when it is missing', () => {
+    for (const dinding of ['penuh', 'rendah'] as const) {
+      const { house, layout } = buildHouse({ ...DEFAULT_RULES, dinding })
+      expect(checkNoOtherOpening(house, layout).status).toBe('pass')
+      const open = { ...house, parts: house.parts.filter((p) => p.id !== 'kaki-dinding') }
+      expect(checkNoOtherOpening(open, layout).status).toBe('fail')
+    }
   })
 })
