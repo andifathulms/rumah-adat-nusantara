@@ -100,29 +100,72 @@ export function checkSmallVolume(layout: Layout): CheckResult {
 /** No window anywhere: the door is the only opening in the building. */
 export function checkNoWindow(house: House, layout: Layout): CheckResult {
   /*
-   * The wall is a ring of posts with one gap in it, so "no window" means the
-   * gap is the only gap — checked by counting the posts that should be there
-   * and finding them all.
+   * Two halves, and the second is the one that was missing.
+   *
+   * The posts: every one the ring calls for is there, with one gap for the
+   * door. That half once stood alone, and it passed on a wall that was two
+   * thirds air — thirty-two posts of thirteen centimetres do not close a
+   * circle twelve metres round, and counting them cannot see the spaces.
+   *
+   * The boards: walking the lining's own vertices round the axis, the widest
+   * angular gap between neighbours must be the doorway — no wider than the
+   * door's arc, centred on its bearing — and every other step must be one
+   * facet. A gap anywhere else is a window, whatever the post count says.
    */
-  const built = house.parts.filter((p) => p.stage === 'dinding').length
+  const posts = house.parts.filter((p) => p.stage === 'dinding' && p.id.startsWith('tiang-')).length
   let expected = 0
   for (let k = 0; k < layout.facets; k++) {
     const a = (k / layout.facets) * Math.PI * 2
     const bearing = a > Math.PI ? a - Math.PI * 2 : a
     if (Math.abs(bearing) >= layout.door.halfAngle) expected += 1
   }
-  const ok = built === expected && expected > 0 && layout.facets - expected >= 1
+  const postsOk = posts === expected && expected > 0 && layout.facets - expected >= 1
+
+  const lining = house.parts.find((p) => p.id === 'papan-dinding')
+  let liningOk = false
+  let widest = 0
+  if (lining && lining.kind === 'mesh') {
+    const bearings = new Set<number>()
+    const pos = lining.positions
+    for (let i = 0; i < pos.length; i += 3) {
+      const a = Math.atan2(pos[i + 2] ?? 0, pos[i] ?? 0)
+      bearings.add(Math.round(((a + Math.PI * 2) % (Math.PI * 2)) * 1e6) / 1e6)
+    }
+    const sorted = [...bearings].sort((x, y) => x - y)
+    let widestAt = 0
+    for (let i = 0; i < sorted.length; i++) {
+      const from = sorted[i] ?? 0
+      const to = i + 1 < sorted.length ? (sorted[i + 1] ?? 0) : (sorted[0] ?? 0) + Math.PI * 2
+      if (to - from > widest) {
+        widest = to - from
+        widestAt = (from + to) / 2
+      }
+    }
+    const centre = Math.atan2(Math.sin(widestAt), Math.cos(widestAt))
+    const step = (Math.PI * 2) / layout.facets
+    const others = sorted.every((b, i) => {
+      const next = i + 1 < sorted.length ? (sorted[i + 1] ?? 0) : (sorted[0] ?? 0) + Math.PI * 2
+      return next - b === widest || next - b <= step * 1.01
+    })
+    liningOk =
+      widest <= layout.door.halfAngle * 2 + 1e-6 && Math.abs(centre) < 1e-3 && others
+  }
+  const ok = postsOk && liningOk
   return {
     key: 'no-window',
     titleId: 'Nol jendela: pintu adalah satu-satunya bukaan di seluruh bangunan',
     titleEn: 'Zero windows: the door is the only opening in the whole building',
     status: ok ? 'pass' : 'fail',
     detail: ok
-      ? `${built} tiang dinding menutup lingkarannya, dengan satu celah untuk pintu dan tidak satu pun celah lain. Cahaya masuk lewat pintu itu dan lewat asap yang keluar dari atapnya. Tiga belas bangunan dalam projek ini, dan hanya yang ini tanpa jendela sama sekali — sebuah bukaan adalah panas yang pergi.`
-      : `${built} tiang dari ${expected} yang seharusnya.`,
+      ? `${posts} tiang dinding dan satu lapis papan menutup lingkarannya, dengan satu celah ${((widest * 180) / Math.PI).toFixed(0)}° untuk pintu dan tidak satu pun celah lain. Cahaya masuk lewat pintu itu dan lewat asap yang keluar dari atapnya. Hanya bangunan ini dalam projek ini yang tanpa jendela sama sekali — sebuah bukaan adalah panas yang pergi.`
+      : !postsOk
+        ? `${posts} tiang dari ${expected} yang seharusnya.`
+        : `Papan dinding meninggalkan celah ${((widest * 180) / Math.PI).toFixed(0)}° yang bukan pintu.`,
     detailEn: ok
-      ? `${built} wall posts close the ring, with one gap for the door and no other gap anywhere. Light comes through that door and through the smoke leaving the roof. Thirteen buildings in this project, and only this one has no window at all — an opening is heat going.`
-      : `${built} posts where ${expected} were called for.`,
+      ? `${posts} wall posts and one layer of boards close the ring, with one ${((widest * 180) / Math.PI).toFixed(0)}° gap for the door and no other gap anywhere. Light comes through that door and through the smoke leaving the roof. Only this building in the project has no window at all — an opening is heat going.`
+      : !postsOk
+        ? `${posts} posts where ${expected} were called for.`
+        : `The wall boards leave a ${((widest * 180) / Math.PI).toFixed(0)}° gap that is not the door.`,
   }
 }
 

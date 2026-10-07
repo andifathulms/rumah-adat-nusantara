@@ -63,11 +63,38 @@ describe('the problem is cold', () => {
     for (const rules of COMBOS) {
       const { house, layout } = buildHouse(rules)
       expect(checkNoWindow(house, layout).status).toBe('pass')
-      const posts = house.parts.filter((p) => p.stage === 'dinding').length
+      const posts = house.parts.filter((p) => p.id.startsWith('tiang-')).length
       // One gap, and exactly one: fewer posts than facets, but only just.
       expect(posts).toBeLessThan(layout.facets)
       expect(layout.facets - posts).toBeLessThanOrEqual(3)
     }
+  })
+
+  /*
+   * The check's second half has to be able to fail, or it is the first half
+   * again. Counting posts passed on a wall that was two-thirds air; so cut a
+   * window in the boards — drop one facet's worth of vertices on the far side
+   * — and the check must refuse the house, with every post still standing.
+   */
+  it('refuses a wall with a window in it, though every post is there', () => {
+    const { house, layout } = buildHouse(DEFAULT_RULES)
+    const lining = house.parts.find((p) => p.id === 'papan-dinding')
+    if (!lining || lining.kind !== 'mesh') throw new Error('no wall boards')
+    const keep: number[] = []
+    for (let i = 0; i < lining.positions.length; i += 3) {
+      const a = Math.atan2(lining.positions[i + 2] ?? 0, lining.positions[i] ?? 0)
+      // a window a little wider than one facet, opposite the door
+      if (Math.abs(Math.abs(a) - Math.PI) < (Math.PI * 2) / layout.facets) continue
+      keep.push(lining.positions[i] ?? 0, lining.positions[i + 1] ?? 0, lining.positions[i + 2] ?? 0)
+    }
+    const holed = {
+      ...house,
+      parts: house.parts.map((p) => (p.id === 'papan-dinding' ? { ...lining, positions: keep } : p)),
+    }
+    expect(checkNoWindow(holed, layout).status).toBe('fail')
+    // and without any boards at all, the posts alone are not a wall
+    const bare = { ...house, parts: house.parts.filter((p) => p.id !== 'papan-dinding') }
+    expect(checkNoWindow(bare, layout).status).toBe('fail')
   })
 
   it('makes a person stoop to get in', () => {

@@ -15,6 +15,7 @@
 import { computeNormals, emptyMesh } from '@/lib/core/geometry'
 import type { MeshData } from '@/lib/core/geometry'
 import { partBuilders } from '@/lib/core/parts'
+import { coneSurface } from '@/lib/core/cone'
 import { DIMS, bangunanInfo } from './rules'
 import type { DimKey } from './rules'
 import type { DaniKinds, Joint, Layout, Part, Rules } from './types'
@@ -173,6 +174,48 @@ export function buildFrame(layout: Layout): { parts: readonly Part[]; joints: re
         WALL_DIMS,
         [Math.cos(a) * layout.radius, layout.floorY + layout.wallHeight / 2, Math.sin(a) * layout.radius],
         [sec, layout.wallHeight, sec],
+      ),
+    )
+  }
+
+  /*
+   * The boards, set tight inside the posts and stopping only at the door.
+   *
+   * Thirty-two posts of thirteen centimetres round a circle twelve metres
+   * long close about a third of it; the rest was air, and the model drew a
+   * picket fence round the one building here whose whole problem is keeping
+   * heat in. The boards are a surface of revolution of the wall's own
+   * section — up the outside face, across the top, down the inside — cut by
+   * the same doorway the thatch is cut by, so the door is the opening and
+   * nothing else is.
+   */
+  {
+    const board = DIMS.wallBoard.value * s
+    const rOut = layout.radius - sec / 2
+    const rIn = rOut - board
+    const y0 = layout.floorY
+    const y1 = layout.floorY + layout.wallHeight
+    parts.push(
+      meshPart(
+        'papan-dinding',
+        { name: 'papan dinding', nameId: 'Papan dinding', nameEn: 'Wall boards' },
+        'dinding',
+        layout.facets,
+        'papan',
+        [...WALL_DIMS, 'wallBoard', 'noWindow'],
+        coneSurface(
+          [
+            { r: rOut, y: y0 },
+            { r: rOut, y: y1 },
+            { r: rIn, y: y1 },
+            { r: rIn, y: y0 },
+          ],
+          {
+            facets: layout.facets,
+            uvScale: 0.4,
+            gap: { from: -layout.door.halfAngle, to: layout.door.halfAngle },
+          },
+        ),
       ),
     )
   }
