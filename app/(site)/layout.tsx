@@ -23,8 +23,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // The film by day, the soot by night — the browser chrome joins the page.
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#D8D7CD' },
-    { media: '(prefers-color-scheme: dark)', color: '#141109' },
+    { media: '(prefers-color-scheme: light)', color: '#DDD8CA' },
+    { media: '(prefers-color-scheme: dark)', color: '#12100A' },
   ],
   width: 'device-width',
   initialScale: 1,

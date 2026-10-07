@@ -115,7 +115,7 @@ export default function Landing({ params }: { params: { locale: string } }) {
         title bar. The drawing under it is the claim made good — the same
         parts the invariants run over, projected and traced.
       */}
-      <h1 className="mt-12 max-w-3xl text-display text-bolu">{pick(COPY.tagline, locale)}</h1>
+      <h1 className="mt-12 max-w-3xl font-display text-display text-bolu">{pick(COPY.tagline, locale)}</h1>
       <p className="mt-5 max-w-2xl text-lead text-muted">{pick(COPY.landing.lede, locale)}</p>
 
       {/*
@@ -289,7 +289,7 @@ function HouseCard({
           <ElevationMark s={s} frame={frame} />
         </span>
         <span className="flex flex-col gap-1 px-4 pb-4 pt-2">
-          <span className="text-title text-bolu">{tradition.house[locale]}</span>
+          <span className="font-display text-title text-bolu">{tradition.house[locale]}</span>
           <span className="micro">{tradition.place[locale]}</span>
           <span className="mt-1 font-mono text-meta text-muted">
             {parts} {pick(COPY.landing.parts, locale)} · {joints}{' '}

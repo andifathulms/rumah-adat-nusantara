@@ -14,6 +14,14 @@ import localFont from 'next/font/local'
  * The sans is the v23 variable file, one latin subset covering 400–700. The
  * mono ships as two static weights because that is all the interface uses:
  * figures and labels do not need a bold.
+ *
+ * The condensed cut is the display voice: the claim, a building's name on its
+ * front door and on its index card. It is the same family drawn narrower,
+ * not a third family — so the "a grotesque or a technical face, never a
+ * serif" rule holds — and it is one static weight, 600, because a headline
+ * is the only thing set in it. A narrower face carries more size in the same
+ * width, which is what lets "Balai selaso jatuh kembar" stand at title size
+ * on a card a third of a page wide.
  */
 
 export const plexSans = localFont({
@@ -34,5 +42,13 @@ export const plexMono = localFont({
   fallback: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
 })
 
-/** The two variables together, for a root <html> className. */
-export const fontVariables = `${plexSans.variable} ${plexMono.variable}`
+export const plexCondensed = localFont({
+  src: './fonts/IBMPlexSansCondensed-latin-600.woff2',
+  weight: '600',
+  display: 'swap',
+  variable: '--font-display',
+  fallback: ['Arial Narrow', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+})
+
+/** The three variables together, for a root <html> className. */
+export const fontVariables = `${plexSans.variable} ${plexMono.variable} ${plexCondensed.variable}`

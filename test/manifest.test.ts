@@ -34,8 +34,8 @@ function manifestJson(): string {
         scope: './',
         display: 'standalone',
         // The film, the colour the browser chrome is asked to take by day.
-        background_color: '#D8D7CD',
-        theme_color: '#D8D7CD',
+        background_color: '#DDD8CA',
+        theme_color: '#DDD8CA',
         icons: [
           { src: 'brand/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'brand/icon-512.png', sizes: '512x512', type: 'image/png' },

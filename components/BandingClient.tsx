@@ -101,7 +101,7 @@ export function BandingClient({ locale }: { locale: Locale }) {
         />
       </header>
 
-      <h1 className="mt-10 max-w-3xl text-display text-bolu">
+      <h1 className="mt-10 max-w-3xl font-display text-display text-bolu">
         {pick(COPY.banding.heading, locale)}
       </h1>
       <p className="mt-4 max-w-2xl text-body text-muted">{pick(COPY.banding.lede, locale)}</p>
@@ -171,7 +171,7 @@ export function BandingClient({ locale }: { locale: Locale }) {
             <section key={`${i}-${t.key}`} className="flex min-w-0 flex-col">
               <Link
                 href={`${houseHref(locale, t.slug)}/`}
-                className="text-title text-bolu underline-offset-4 hover:underline"
+                className="font-display text-title text-bolu underline-offset-4 hover:underline"
               >
                 {t.house[locale]}
               </Link>

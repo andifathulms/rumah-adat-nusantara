@@ -24,7 +24,7 @@ export interface ModelIntro {
 export function ModelLoading({ locale, intro }: { locale: Locale; intro: ModelIntro }) {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col justify-center px-6 py-10">
-      <p className="text-title font-medium text-bolu">{intro.house}</p>
+      <p className="font-display text-title text-bolu">{intro.house}</p>
       <p className="micro mt-1">{intro.place}</p>
       <div className="mt-5">
         <ElevationSheet s={intro.s} caption={pick(COPY.loading, locale)} />

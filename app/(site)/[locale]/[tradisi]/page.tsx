@@ -81,7 +81,7 @@ export default function House({ params }: { params: { locale: string; tradisi: s
         />
       </header>
 
-      <h1 className="mt-8 text-display text-bolu">{t.house[locale]}</h1>
+      <h1 className="mt-8 font-display text-display text-bolu">{t.house[locale]}</h1>
       <p className="micro mt-3">
         {t.people[locale]} · {t.place[locale]}
       </p>

@@ -39,13 +39,17 @@ The four traditional pa'ssura colours. The palette is closed: no fifth colour, n
 | Riri | `#C8912B` | turmeric / bile | carved highlight, rosette centre |
 | Kapur | `#E9E3D2` | slaked lime | reversed text, carved white |
 
-Interface neutrals sit outside the pigment set on purpose, so pigment always reads as *content*: drafting film `#D8D7CD`, sheet `#E3E0D1` (a sheet lying on the film — cards, the rail, drawing frames; a surface step, not a hue), ground plane `#C3BDA9`, muted ink `#6B675C`.
+Interface neutrals sit outside the pigment set on purpose, so pigment always reads as *content*: drafting film `#DDD8CA`, sheet `#EFEBE1` (a sheet lying on the film — cards, the rail, drawing frames; a surface step of 1.20:1, not a hue), ground plane `#C3BDA9`, muted ink `#575349`.
+
+The film was `#D8D7CD` and the sheet `#E3E0D1` until the second design pass. Beside the pigments that film read green-grey, and at 1.09:1 a card and the page it lay on were one surface, so nothing on the landing read as an object. The pigments did not move; only the paper did.
+
+**One shadow, and it means "you can pick this up".** `--lift` appears on hover on index cards, route doors and the comparison's houses — never on prose, headings or the rail. Depth is a signal about interaction, not decoration.
 
 **Rara is the only accent and it is expensive.** It marks exactly two things: a number that has no source, and where rainwater lands. Both are arguments. If it starts appearing on hover states, it has been spent.
 
 ## The night register
 
-The same four pigments after dark, following `prefers-color-scheme` and nothing else — there is no toggle, because the site keeps no state anywhere and a theme control would be its first. Soot and lime swap roles: soot `#141109` becomes the ground (vitrine surface `#1D1910`), kapur becomes the ink. No token gains a hue — rara is lifted in value for dark ground (`#C76A48`, 5.01:1) exactly the way riri already dropped for light, and riri needs no ink variant at night because the pigment itself clears 6.77:1. Text over a riri fill uses `--on-riri`, which stays near-black in both registers, because riri is the one pigment that never changes value.
+The same four pigments after dark, following `prefers-color-scheme` and nothing else — there is no toggle, because the site keeps no state anywhere and a theme control would be its first. Soot and lime swap roles: soot `#12100A` becomes the ground (vitrine surface `#1F1B12`, 1.11:1), kapur becomes the ink. No token gains a hue — rara is lifted in value for dark ground (`#C76A48`, 5.01:1) exactly the way riri already dropped for light, and riri needs no ink variant at night because the pigment itself clears 6.77:1. Text over a riri fill uses `--on-riri`, which stays near-black in both registers, because riri is the one pigment that never changes value.
 
 **The model does not go dark.** The renderer carries its own colour constants and its light comes from the solar arithmetic, so the house stays a physical object in computed daylight and the dark chrome meets the viewport like a mat around a print. That is the design: the interface has a night, the building has a sun.
 
@@ -57,10 +61,11 @@ No display serif. The register is a measured drawing, so the mono face does the 
 
 The face is **IBM Plex**, the clause below finally exercised: a technical grotesque drawn for engineering documentation, which is what this site pretends every page is. Vendored into the repo (latin subsets, ~60KB total, OFL licence beside the files), served same-origin via `next/font` — the zero-runtime-network rule holds and the app still works with the wifi off. The system stacks remain as declared fallbacks.
 
-- Sans (IBM Plex Sans, variable): body copy and headings. Body 400, headings 600, display 600.
+- Sans (IBM Plex Sans, variable): body copy and secondary headings. Body 400, headings 600.
+- Condensed (IBM Plex Sans Condensed, 600 only): the display voice — the claim, a building's name on its front door and its index card, island headings. The same family drawn narrower, so the rule below holds; a narrower face carries more size in the same width, which is what a catalogue plate needs. Vendored like the others (~15 KB).
 - Mono (IBM Plex Mono, 400/500): every number, every stage name, every control label, every provenance tag. Uppercase with `0.1em` tracking for micro-labels only.
 - Numbers are always mono, always right-aligned in a readout, always with their unit.
-- The display step is fluid — `clamp(34px … 58px)` — because the claim on a landing and the house name on a front door are headlines, not labels. It is still one step of the six-step scale.
+- The display step is fluid — `clamp(40px … 84px)` — because the claim on a landing and the house name on a front door are headlines, not labels. It is still one step of the six-step scale.
 
 The original rule stands for any future addition: a grotesque or a technical face, never a high-contrast serif.
 

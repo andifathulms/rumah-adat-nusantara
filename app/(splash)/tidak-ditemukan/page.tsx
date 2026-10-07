@@ -36,7 +36,7 @@ export default function NotFound() {
         <p className="font-mono text-display text-bolu" aria-hidden>
           404
         </p>
-        <h1 lang="id" className="mt-2 text-title text-bolu">
+        <h1 lang="id" className="mt-2 font-display text-title text-bolu">
           {pick(COPY.notFound.heading, 'id')}
         </h1>
         <p lang="en" className="mt-1 text-body text-muted">

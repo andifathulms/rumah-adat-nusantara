@@ -48,6 +48,15 @@ const config: Config = {
           'Roboto',
           'sans-serif',
         ],
+        // The condensed cut: headlines and building names, nothing else.
+        display: [
+          'var(--font-display)',
+          'Arial Narrow',
+          'system-ui',
+          '-apple-system',
+          'Segoe UI',
+          'sans-serif',
+        ],
         mono: [
           'var(--font-mono)',
           'ui-monospace',
@@ -76,6 +85,10 @@ const config: Config = {
       maxWidth: {
         readout: 'var(--readout-max)',
         caption: 'var(--caption-max)',
+      },
+      boxShadow: {
+        // The one shadow: a surface a reader can pick up.
+        lift: 'var(--lift)',
       },
       backdropBlur: {
         veil: 'var(--veil-blur)',
