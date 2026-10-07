@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Silhouette } from '@/lib/core/silhouette'
-import { packShelf } from '@/lib/draw/shelf'
+import { justifyShelf, packShelf } from '@/lib/draw/shelf'
 
 /*
  * Elevation drawings, from computed silhouettes.
@@ -32,6 +32,44 @@ const BAR = 5
  * means what the wipe says it means.
  */
 const RULE_W = 0.1
+/**
+ * The widest a gap may grow when a row is spread to the sheet's edges, in
+ * metres. Past this a row is centred instead: two houses forty metres apart
+ * read as two drawings, not one shelf.
+ */
+const MAX_GAP = GAP * 4
+/**
+ * How many metres of sheet one character of a shelf label takes, at the
+ * narrowest the shelf renders (`--shelf-min`). The mono micro step advances
+ * about 7.7px a character with its tracking, and at the minimum width a metre
+ * is about six pixels. An estimate on the safe side: it only decides whether a
+ * name near the sheet's edge turns inward.
+ */
+const LABEL_M_PER_CHAR = 1.3
+/** The radius of a metre-grid dot, in metres of the drawing. */
+const DOT_R = 0.07
+
+/**
+ * The metre grid behind a drawing: one dot at every whole metre.
+ *
+ * In metres, inside the drawing's own viewBox, so a dot is a metre at every
+ * size the sheet renders — the same reasoning that sizes the scale bar as a
+ * fraction of the viewBox. It is the scale stated a second time, faintly,
+ * everywhere at once, and it is why the grid is not a CSS background: a
+ * background in pixels would be a texture, and this is a measurement.
+ */
+function MetreGrid({ id, w, h }: { id: string; w: number; h: number }) {
+  return (
+    <>
+      <defs>
+        <pattern id={id} width={1} height={1} patternUnits="userSpaceOnUse">
+          <circle cx={0.5} cy={0.5} r={DOT_R} fill="var(--dot)" />
+        </pattern>
+      </defs>
+      <rect x={0} y={0} width={f(w)} height={f(h)} fill={`url(#${id})`} />
+    </>
+  )
+}
 
 const f = (n: number) => (Math.round(n * 100) / 100).toString()
 
@@ -134,17 +172,28 @@ export function ElevationShelf({
    * hero that repeats all of the index's links at label size is the same
    * decision offered twice, the second time at eleven pixels.
    */
-  items: readonly { key: string; href?: string; label: string; s: Silhouette }[]
+  /**
+   * `anchor` makes the silhouette itself a pointer to somewhere on the same
+   * page — the landing's index card for that house. It is an in-page jump,
+   * not a second set of doors: the index stays the one enumeration, and the
+   * drawing just says "that one" and scrolls there. Pointer-only (the shelf
+   * is aria-hidden and the anchors are out of the tab order), because a
+   * keyboard reader already has the index a few stops below.
+   */
+  items: readonly { key: string; href?: string; anchor?: string; label: string; s: Silhouette }[]
   caption: string
 }) {
-  const shelf = packShelf(
-    items.map((i) => ({ ...i, width: i.s.max[0] - i.s.min[0], height: i.s.max[1] })),
-    { gap: GAP, pad: PAD },
+  const shelf = justifyShelf(
+    packShelf(
+      items.map((i) => ({ ...i, width: i.s.max[0] - i.s.min[0], height: i.s.max[1] })),
+      { gap: GAP, pad: PAD },
+    ),
+    { gap: GAP, pad: PAD, maxGap: MAX_GAP },
   )
   const W = shelf.width
 
   return (
-    <div className="overflow-x-auto rounded border border-hairline">
+    <div className="shelf overflow-x-auto rounded border border-hairline bg-sheet">
       <div className="min-w-shelf px-4 pt-5">
         {shelf.rows.map((row, r) => {
           // Every row in the shelf's height, not its own: see the note on
@@ -154,6 +203,7 @@ export function ElevationShelf({
           return (
             <div key={r} className={r > 0 ? 'mt-2' : undefined}>
               <svg viewBox={`0 0 ${f(W)} ${f(H)}`} className="w-full" aria-hidden="true">
+                <MetreGrid id={`rak-meter-${r}`} w={W} h={baseY} />
                 <line
                   x1={0}
                   y1={f(baseY)}
@@ -175,18 +225,27 @@ export function ElevationShelf({
                   finishes inside a couple of beats of the layout timing.
                   Reduced motion gets the finished drawing.
                 */}
-                {row.items.map((p) => (
-                  <path
-                    key={p.key}
-                    d={pathOf(p.s, p.ox, baseY)}
-                    fill="var(--bolu)"
-                    fillRule="evenodd"
-                    className="house-raise"
-                    style={{
-                      animationDelay: `calc(var(--t-layout) + ${r} * var(--t-state))`,
-                    }}
-                  />
-                ))}
+                {row.items.map((p) => {
+                  const house = (
+                    <path
+                      d={pathOf(p.s, p.ox, baseY)}
+                      fill="var(--bolu)"
+                      fillRule="evenodd"
+                      className="house-raise shelf-house"
+                      style={{
+                        animationDelay: `calc(var(--t-layout) + ${r} * var(--t-state))`,
+                      }}
+                    />
+                  )
+                  return p.anchor ? (
+                    <a key={p.key} href={`#${p.anchor}`} tabIndex={-1} className="shelf-door">
+                      <title>{p.label}</title>
+                      {house}
+                    </a>
+                  ) : (
+                    <g key={p.key}>{house}</g>
+                  )
+                })}
               </svg>
               {/*
                 Each name sits over its own house and is allowed the width of
@@ -204,12 +263,31 @@ export function ElevationShelf({
               */}
               <div className="relative h-10">
                 {row.items.map((p) => {
-                  const place = {
-                    left: `${(p.centre / W) * 100}%`,
-                    width: `${((p.width + GAP) / W) * 100}%`,
-                  }
-                  const face =
-                    'micro absolute top-1 -translate-x-1/2 text-center leading-tight text-bolu'
+                  /*
+                   * A justified row puts its first and last houses on the
+                   * sheet's edges, and a name wider than a small house —
+                   * "waruga" under a stone box — centred on it hangs off the
+                   * sheet. A name that would overrun is set flush to the edge
+                   * it would cross, the way a drawing's labels turn inward at
+                   * a margin; every other name stays centred on its house.
+                   */
+                  const half = (p.label.length * LABEL_M_PER_CHAR) / 2
+                  const end =
+                    p.centre - half < 0 ? 'left' : p.centre + half > W ? 'right' : 'centre'
+                  const slot = `${((p.width + GAP) / W) * 100}%`
+                  const place =
+                    end === 'left'
+                      ? { left: `${(p.ox / W) * 100}%`, minWidth: slot }
+                      : end === 'right'
+                        ? { right: `${((W - (p.ox + p.width)) / W) * 100}%`, minWidth: slot }
+                        : { left: `${(p.centre / W) * 100}%`, width: slot }
+                  const align =
+                    end === 'left'
+                      ? 'text-left'
+                      : end === 'right'
+                        ? 'text-right'
+                        : '-translate-x-1/2 text-center'
+                  const face = `micro absolute top-1 ${align} leading-tight text-bolu`
                   return p.href ? (
                     <Link
                       key={p.key}

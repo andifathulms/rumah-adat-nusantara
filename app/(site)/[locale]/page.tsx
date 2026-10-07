@@ -127,11 +127,52 @@ export default function Landing({ params }: { params: { locale: string } }) {
           caption={pick(COPY.landing.shelfCaption, locale)}
           items={built.map(({ t, s }) => ({
             key: t.key,
+            anchor: cardId(t),
             label: t.house[locale],
             s,
           }))}
         />
       </div>
+
+      {/*
+        The figures under the drawing, every one summed from the registry at
+        export time — the copy beside them carries no number. The last is
+        the argument the project makes: it is set in rara because rara marks
+        a number with no source, and this is the count of numbers that have
+        one from a survey.
+      */}
+      <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded border border-hairline bg-sheet sm:grid-cols-4">
+        {[
+          { label: COPY.landing.figures.buildings, value: TRADITIONS.length, rara: false },
+          {
+            label: COPY.landing.figures.parts,
+            value: built.reduce((n, { b }) => n + b.house.parts.length, 0),
+            rara: false,
+          },
+          {
+            label: COPY.landing.figures.joints,
+            value: built.reduce((n, { b }) => n + b.house.joints.length, 0),
+            rara: false,
+          },
+          {
+            label: COPY.landing.figures.measured,
+            value: TRADITIONS.reduce((n, t) => n + t.split.measured, 0),
+            rara: true,
+          },
+        ].map((fig, i) => (
+          <div
+            key={i}
+            className={`flex flex-col gap-1 border-hairline px-4 py-3 ${
+              i % 2 === 0 ? 'border-r' : 'sm:border-r'
+            } ${i < 2 ? 'border-b sm:border-b-0' : ''} last:border-r-0`}
+          >
+            <dt className="micro">{pick(fig.label, locale)}</dt>
+            <dd className={`num text-left font-display text-title ${fig.rara ? 'text-rara' : 'text-bolu'}`}>
+              {fig.value.toLocaleString(locale === 'id' ? 'id-ID' : 'en-GB')}
+            </dd>
+          </div>
+        ))}
+      </dl>
 
       <hr className="rule my-10" />
 
@@ -141,7 +182,7 @@ export default function Landing({ params }: { params: { locale: string } }) {
         column so no beat is split mid-sentence.
       */}
       <section id="cerita" className="scroll-mt-16">
-        <h2 className="micro mb-4">{pick(COPY.landing.storyHeading, locale)}</h2>
+        <h2 className="mb-5 font-display text-title text-bolu">{pick(COPY.landing.storyHeading, locale)}</h2>
         <div className="gap-10 sheet:columns-2">
           {COPY.landing.story.map((p, i) => (
             <p key={i} className="reveal mb-4 break-inside-avoid text-body text-bolu">
@@ -162,7 +203,7 @@ export default function Landing({ params }: { params: { locale: string } }) {
         the prose measure.
       */}
       <section id="tapak" className="reveal scroll-mt-16">
-        <h2 className="micro mb-4">{pick(COPY.landing.sitesHeading, locale)}</h2>
+        <h2 className="mb-5 font-display text-title text-bolu">{pick(COPY.landing.sitesHeading, locale)}</h2>
         {/* The map is one link per house; a keyboard reader can decline the
             whole archipelago in one stop. Visible only while focused. */}
         <a
@@ -180,7 +221,7 @@ export default function Landing({ params }: { params: { locale: string } }) {
       <hr className="rule my-10" />
 
       <section id="rumah" className="scroll-mt-16">
-        <h2 className="micro mb-4">{pick(COPY.landing.housesHeading, locale)}</h2>
+        <h2 className="mb-5 font-display text-title text-bolu">{pick(COPY.landing.housesHeading, locale)}</h2>
         {/*
           The legend for the card bars, drawn once above the index rather than
           once per card: no colour may carry a meaning only the code knows.
@@ -205,13 +246,23 @@ export default function Landing({ params }: { params: { locale: string } }) {
         <IndexFilter
           label={pick(COPY.landing.filterLabel, locale)}
           empty={pick(COPY.landing.filterEmpty, locale)}
+          all={pick(COPY.landing.filterAll, locale)}
+          islandsLabel={pick(COPY.landing.filterIslands, locale)}
+          islands={groupByIsland(built).map((g) => ({ id: g.island.id, label: g.island[locale] }))}
         >
           {groupByIsland(built).map((group) => (
-            <section key={group.island.id} data-kelompok className="mt-8 first:mt-0">
-              <h3 className="mb-3 border-b border-hairline pb-2 text-lead font-medium text-bolu">
-                {group.island[locale]}
-              </h3>
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sheet:grid-cols-3">
+            <section
+              key={group.island.id}
+              data-kelompok={group.island.id}
+              className="mt-10 first:mt-0"
+            >
+              {/* The island in the display voice, with its own count beside
+                  it — computed, so a new house moves it. */}
+              <div className="mb-4 flex items-baseline justify-between gap-4 border-b border-muted pb-2">
+                <h3 className="font-display text-title text-bolu">{group.island[locale]}</h3>
+                <span className="num text-meta text-muted">{group.items.length}</span>
+              </div>
+              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 sheet:grid-cols-3">
                 {group.items.map(({ t, b, s, plate }) => (
                   <HouseCard
                     key={t.key}
@@ -253,6 +304,11 @@ export default function Landing({ params }: { params: { locale: string } }) {
   )
 }
 
+/** The index card's id, which the shelf's silhouettes point at. */
+function cardId(t: Tradition): string {
+  return `rumah-${t.key}`
+}
+
 function HouseCard({
   locale,
   tradition,
@@ -273,10 +329,10 @@ function HouseCard({
   const split = tradition.split
   const share = split.total === 0 ? 0 : Math.round((split.interpolated / split.total) * 100)
   return (
-    <li className="reveal h-full" data-cari={searchText(tradition)}>
+    <li id={cardId(tradition)} className="reveal h-full scroll-mt-20" data-cari={searchText(tradition)}>
       <Link
         href={`${houseHref(locale, tradition.slug)}/`}
-        className="press flex h-full flex-col rounded border border-hairline bg-sheet transition-colors duration-state hover:border-muted hover:bg-wash"
+        className="press lift flex h-full flex-col rounded border border-hairline bg-sheet hover:border-muted"
       >
         {/* The plate header: catalogue number left, whose house right. */}
         <span className="flex items-baseline justify-between gap-2 border-b border-hairline px-4 py-2">
@@ -303,8 +359,8 @@ function HouseCard({
             <span className="font-mono text-meta text-muted">
               {pick(COPY.landing.interpolatedShare, locale).replace('{pct}', String(share))}
             </span>
-            <span className="text-body text-bolu underline underline-offset-4">
-              {pick(COPY.landing.enter, locale)} <span aria-hidden>→</span>
+            <span className="whitespace-nowrap text-body text-bolu underline underline-offset-4">
+              {pick(COPY.landing.enter, locale)} <span aria-hidden className="lift-arrow">→</span>
             </span>
           </span>
         </span>

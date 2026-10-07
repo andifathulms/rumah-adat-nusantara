@@ -95,3 +95,41 @@ export function packShelf<T extends { readonly width: number; readonly height: n
 
   return { rows: packed, width, height }
 }
+
+/**
+ * Spread each row's houses across the sheet's full width.
+ *
+ * First-fit in registry order leaves every row but the widest short, and on
+ * the landing that read as a drawing abandoned two-thirds of the way across.
+ * The fix may not touch the two things the shelf exists to keep: the order
+ * (history) and the scale (the claim). So only the *gaps* change — every
+ * house keeps its own width in the same viewBox, and the rows still share one
+ * width and one height.
+ *
+ * A row whose gaps would have to grow past `maxGap` to reach the edge is not
+ * stretched — a last row of two houses with forty metres of nothing between
+ * them reads as two unrelated drawings — it keeps `gap` and is centred
+ * instead.
+ */
+export function justifyShelf<T extends { readonly width: number; readonly height: number }>(
+  shelf: Shelf<T>,
+  opts: { readonly gap: number; readonly pad: number; readonly maxGap: number },
+): Shelf<T> {
+  const span = shelf.width - opts.pad * 2
+  const rows = shelf.rows.map((row) => {
+    const n = row.items.length
+    const filled = row.items.reduce((sum, i) => sum + i.width, 0)
+    const spread = n > 1 ? (span - filled) / (n - 1) : Infinity
+    const gap = spread <= opts.maxGap ? spread : opts.gap
+    const used = filled + gap * (n - 1)
+    let cursor = spread <= opts.maxGap ? opts.pad : opts.pad + (span - used) / 2
+    const items = row.items.map((item) => {
+      const placed = { ...item, ox: cursor, centre: cursor + item.width / 2 }
+      cursor += item.width + gap
+      return placed
+    })
+    const last = items[items.length - 1]
+    return { items, width: last ? last.ox + last.width : 0, height: row.height }
+  })
+  return { rows, width: shelf.width, height: shelf.height }
+}

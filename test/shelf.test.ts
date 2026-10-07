@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { silhouette } from '@/lib/core/silhouette'
-import { ROW_TARGET, packShelf } from '@/lib/draw/shelf'
+import { ROW_TARGET, justifyShelf, packShelf } from '@/lib/draw/shelf'
 import { TRADITIONS } from '@/lib/tradition/registry'
 
 const GAP = 3
@@ -72,5 +72,53 @@ describe('the shelf', () => {
     const shelf = packShelf([{ key: 'only', width: 12, height: 8 }], { gap: GAP, pad: PAD })
     expect(shelf.rows).toHaveLength(1)
     expect(shelf.width).toBeCloseTo(14, 9)
+  })
+
+  /*
+   * Justifying the rows may move gaps and nothing else: the order is history
+   * and the widths are the scale, and both are what the hero claims.
+   */
+  describe('justified', () => {
+    const MAX = GAP * 4
+    const items = houses()
+    const packed = packShelf(items, { gap: GAP, pad: PAD })
+    const shelf = justifyShelf(packed, { gap: GAP, pad: PAD, maxGap: MAX })
+
+    it('keeps the sheet width and height, so the scale is unchanged', () => {
+      expect(shelf.width).toBe(packed.width)
+      expect(shelf.height).toBe(packed.height)
+    })
+
+    it('keeps every house, its width and its row, in registry order', () => {
+      expect(shelf.rows.map((r) => r.items.map((i) => i.key))).toEqual(
+        packed.rows.map((r) => r.items.map((i) => i.key)),
+      )
+      shelf.rows.forEach((r, ri) =>
+        r.items.forEach((it, ii) => expect(it.width).toBe(packed.rows[ri]!.items[ii]!.width)),
+      )
+    })
+
+    it('never overlaps two houses and never lets one off the sheet', () => {
+      for (const row of shelf.rows) {
+        row.items.forEach((it, i) => {
+          expect(it.ox).toBeGreaterThanOrEqual(PAD - 1e-9)
+          expect(it.ox + it.width).toBeLessThanOrEqual(shelf.width - PAD + 1e-9)
+          const next = row.items[i + 1]
+          if (next) expect(next.ox - (it.ox + it.width)).toBeGreaterThanOrEqual(GAP - 1e-9)
+        })
+      }
+    })
+
+    it('runs a row to both edges unless that would open a gap past the cap', () => {
+      for (const row of shelf.rows) {
+        const first = row.items[0]!
+        const last = row.items[row.items.length - 1]!
+        const gaps = row.items.slice(1).map((it, i) => it.ox - (row.items[i]!.ox + row.items[i]!.width))
+        const reachesEdges =
+          Math.abs(first.ox - PAD) < 1e-9 && Math.abs(last.ox + last.width - (shelf.width - PAD)) < 1e-9
+        expect(reachesEdges || gaps.every((g) => Math.abs(g - GAP) < 1e-9)).toBe(true)
+        for (const g of gaps) expect(g).toBeLessThanOrEqual(MAX + 1e-9)
+      }
+    })
   })
 })

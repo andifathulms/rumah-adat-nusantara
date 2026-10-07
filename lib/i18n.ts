@@ -174,6 +174,21 @@ export const COPY = {
       'Filter by name, people, place, or island',
     ),
     filterEmpty: t('Tidak ada yang cocok dengan “{q}”.', 'Nothing matches “{q}”.'),
+    /* The island chips beside the filter: the whole index, or one group. */
+    filterAll: t('Semua', 'All'),
+    filterIslands: t('Kepulauan', 'Island group'),
+    /*
+     * The figures strip under the hero. Labels only — every number beside
+     * them is summed from the registry at export time, so the copy still
+     * carries no count a thirty-sixth house would falsify. The last one is
+     * the argument the whole project makes, and it is meant to be read.
+     */
+    figures: {
+      buildings: t('Bangunan', 'Buildings'),
+      parts: t('Bagian dihitung', 'Parts computed'),
+      joints: t('Sambungan', 'Joints'),
+      measured: t('Ukuran yang disurvei', 'Dimensions surveyed'),
+    },
     /* Says what the plate number is, so it stops implying an order it is not.
        The index is arranged by island; the stamp records collection history. */
     plateGloss: t(

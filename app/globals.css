@@ -447,6 +447,48 @@ body {
     }
   }
 
+  /*
+   * Pointing at one house on the shelf sets the others back, so the one under
+   * the pointer is the only figure on the sheet — the drawing answering
+   * "which one is that?" before the reader has to read a label. Opacity on a
+   * flat soot fill, not a hue: no pigment is spent on a hover. Where :has is
+   * missing the shelf simply does not dim, and the link still works.
+   */
+  .shelf-house {
+    transition: opacity var(--t-state) ease-out;
+  }
+  .shelf-door {
+    cursor: pointer;
+  }
+  .shelf:has(.shelf-door:hover) .shelf-house {
+    opacity: 0.25;
+  }
+  .shelf .shelf-door:hover .shelf-house {
+    opacity: 1;
+  }
+
+  /*
+   * A card a reader can pick up rises to meet the pointer and casts the one
+   * shadow. Paired with .press, so it also gives a millimetre when pressed.
+   */
+  .lift {
+    transition:
+      transform var(--t-state) ease-out,
+      box-shadow var(--t-state) ease-out,
+      border-color var(--t-state) ease-out;
+  }
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--lift);
+  }
+  .lift:hover .lift-arrow {
+    transform: translateX(4px);
+  }
+  .lift-arrow {
+    display: inline-block;
+    transition: transform var(--t-state) ease-out;
+  }
+
   /* A pressed control gives a millimetre, like a thing with mass. */
   .press:active {
     transform: translateY(1px);
